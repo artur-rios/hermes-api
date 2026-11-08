@@ -4,7 +4,7 @@ Hermes is an internal HTTP service that sends plain text email on behalf of my o
 project calls it with its own API key, and Hermes applies that project's rules and delivers the
 message through Mailgun. It has no public route: it is reachable only on the Docker network.
 
-> **Status:** foundation in place, email sending not implemented yet.
+> **Status:** email sending works. Owner alerts and the integrations are not implemented yet.
 
 ## What it does
 
@@ -94,7 +94,7 @@ pull request is opened.
 | Milestone | Delivers | Depends on | Issues | Status |
 |---|---|---|---|---|
 | [M-01 — Foundation](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/88) | The repository, build, configuration, container, CI and yggdrasil entries, and the `ArturRios.Messaging` release that gives a sender and reply-to per message. | — | 1 | 1 / 1 closed |
-| [M-02 — Email sending](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/89) | A configured project can send email under its own key, sender, recipients and limits. | M-01 | 2 | 1 / 2 closed |
+| [M-02 — Email sending](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/89) | A configured project can send email under its own key, sender, recipients and limits. | M-01 | 2 | 2 / 2 closed |
 | [M-03 — Operability](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/90) | The owner is told when a project reaches its daily limit, and the platform can see that Hermes is healthy. | M-01, M-02 | 2 | 0 / 2 closed |
 | [M-04 — Integrations](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/91) | Visitors can send a message from the personal page, and all of Heimdall's email goes through Hermes. | M-01, M-02, M-03 | 2 | 0 / 2 closed |
 

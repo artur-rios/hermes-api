@@ -1,4 +1,6 @@
 using System.Net.Mail;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ArturRios.Hermes.WebApi.Emails;
 
@@ -43,6 +45,13 @@ public static class Mailbox
 
         return isQuoted || isPlain ? mailbox.Address : null;
     }
+
+    /// <summary>
+    /// How logs refer to a recipient: the first twelve hexadecimal characters of the SHA-256 of the trimmed, lower-cased
+    /// address, the same reference ArturRios.Messaging logs.
+    /// </summary>
+    public static string Reference(string address) =>
+        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(address.Trim().ToLowerInvariant())))[..12];
 
     /// <summary>The domain of an address already known to be valid.</summary>
     public static string DomainOf(string address) => address[(address.LastIndexOf('@') + 1)..];

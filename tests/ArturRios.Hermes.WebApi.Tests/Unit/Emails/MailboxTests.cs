@@ -62,6 +62,21 @@ public class MailboxTests
         Assert.False(isAddress);
     }
 
+    [UnitTheory]
+    [InlineData("to@example.com")]
+    [InlineData("  TO@Example.com ")]
+    public void GivenAnAddress_WhenReferencingIt_ThenItIsTheFirstTwelveHexCharactersOfItsHash(string address)
+    {
+        // Given
+        var hash = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData("to@example.com"u8));
+
+        // When
+        var reference = Mailbox.Reference(address);
+
+        // Then
+        Assert.Equal(hash[..12], reference);
+    }
+
     [UnitFact]
     public void GivenAnAddress_WhenReadingItsDomain_ThenItIsWhatFollowsTheAt()
     {

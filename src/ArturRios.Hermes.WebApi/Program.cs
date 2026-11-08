@@ -1,4 +1,5 @@
 using ArturRios.Hermes.WebApi.Clients;
+using ArturRios.Hermes.WebApi.Emails;
 using ArturRios.Hermes.WebApi.Platform;
 using Serilog;
 
@@ -34,6 +35,8 @@ public class Program
             services.GetRequiredService<IConfiguration>(),
             services.GetRequiredService<IHostEnvironment>().IsProduction()));
 
+        EmailRegistration.Add(builder.Services);
+
         MetricsSetup.Add(builder.Services);
 
         return builder;
@@ -51,6 +54,8 @@ public class Program
         app.UseSerilogRequestLogging();
 
         HealthEndpoint.Map(app);
+
+        SendEmailEndpoint.Map(app);
 
         return app;
     }
