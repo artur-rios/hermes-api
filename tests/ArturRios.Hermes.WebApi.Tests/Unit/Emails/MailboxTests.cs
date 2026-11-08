@@ -53,6 +53,10 @@ public class MailboxTests
     [InlineData("Acme <a@mg.example.com>")]
     [InlineData("a@mg.example.com, b@mg.example.com")]
     [InlineData(" a@mg.example.com")]
+    [InlineData("\"x@evil.example.com, y\"@example.com")]
+    [InlineData("a@localhost")]
+    [InlineData("a@example.com.")]
+    [InlineData("a@[127.0.0.1]")]
     public void GivenAnythingButOneBareAddress_WhenChecked_ThenItIsNotAnAddress(string? value)
     {
         // When
@@ -60,6 +64,21 @@ public class MailboxTests
 
         // Then
         Assert.False(isAddress);
+    }
+
+    [UnitTheory]
+    [InlineData("to@example.com")]
+    [InlineData("  TO@Example.com ")]
+    public void GivenAnAddress_WhenReferencingIt_ThenItIsTheFirstTwelveHexCharactersOfItsHash(string address)
+    {
+        // Given
+        var hash = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData("to@example.com"u8));
+
+        // When
+        var reference = Mailbox.Reference(address);
+
+        // Then
+        Assert.Equal(hash[..12], reference);
     }
 
     [UnitFact]

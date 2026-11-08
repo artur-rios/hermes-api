@@ -14,3 +14,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Clients are read from the environment at startup. Hermes refuses to start, naming the client and the setting, when a
   client is invalid, when two clients share an identifier or a key, when a sender is off the Mailgun domain, or when
   production has no Mailgun credentials or alert address.
+- `POST /api/emails` sends one plain text email for the client the API key belongs to, under that client's sender,
+  recipient policy and per-minute and per-day limits. Outside production without Mailgun, it logs instead of sending.

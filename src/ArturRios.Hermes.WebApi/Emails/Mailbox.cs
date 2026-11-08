@@ -1,4 +1,6 @@
 using System.Net.Mail;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ArturRios.Hermes.WebApi.Emails;
 
@@ -9,9 +11,18 @@ namespace ArturRios.Hermes.WebApi.Emails;
 /// </summary>
 public static class Mailbox
 {
-    /// <summary>Whether <paramref name="value"/> is exactly one address, with no display name.</summary>
+    /// <summary>
+    /// Whether <paramref name="value"/> is exactly one deliverable address, with no display name. A quoted local part
+    /// is refused because it can hold a comma, which a provider might read as a second recipient.
+    /// </summary>
     public static bool IsAddress(string? value) =>
-        MailAddress.TryCreate(value, out var mailbox) && string.Equals(value, mailbox.Address, StringComparison.OrdinalIgnoreCase);
+        MailAddress.TryCreate(value, out var mailbox)
+        && string.Equals(value, mailbox.Address, StringComparison.OrdinalIgnoreCase)
+        && !value.Contains('"')
+        && HasDeliverableDomain(DomainOf(value));
+
+    private static bool HasDeliverableDomain(string domain) =>
+        domain.Contains('.') && !domain.EndsWith('.') && !domain.StartsWith('[');
 
     /// <summary>
     /// The address of a sender, which may carry a display name (<c>Example &lt;no-reply@example.com&gt;</c>), or
@@ -43,6 +54,13 @@ public static class Mailbox
 
         return isQuoted || isPlain ? mailbox.Address : null;
     }
+
+    /// <summary>
+    /// How logs refer to a recipient: the first twelve hexadecimal characters of the SHA-256 of the trimmed, lower-cased
+    /// address, the same reference ArturRios.Messaging logs.
+    /// </summary>
+    public static string Reference(string address) =>
+        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(address.Trim().ToLowerInvariant())))[..12];
 
     /// <summary>The domain of an address already known to be valid.</summary>
     public static string DomainOf(string address) => address[(address.LastIndexOf('@') + 1)..];
