@@ -13,12 +13,16 @@ public class Program
 
         builder.Host.UseSerilog((_, configuration) => LoggingSetup.Configure(configuration));
 
+        MetricsSetup.Add(builder.Services);
+
         return builder;
     }
 
     public static WebApplication CreateApplication(WebApplicationBuilder builder)
     {
         var app = builder.Build();
+
+        MetricsSetup.Use(app);
 
         app.UseSerilogRequestLogging();
 
