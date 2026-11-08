@@ -18,6 +18,7 @@ public sealed class SendEmailHandler(
     ClientAuthenticator authenticator,
     SendEmailRequestValidator validator,
     UsageCounters counters,
+    OwnerAlert ownerAlert,
     IEmailService emailService,
     ILogger<SendEmailHandler> logger)
 {
@@ -63,6 +64,11 @@ public sealed class SendEmailHandler(
             return new SendEmailResult(
                 DataOutput<string?>.New.WithError(SendEmailOutcomes.LimitReached),
                 decision.RetryAfterSeconds);
+        }
+
+        if (decision.AlertOwner)
+        {
+            await ownerAlert.SendAsync(client);
         }
 
         var message = new EmailMessage(to, request.Subject!, request.Body!) { From = client.Sender, ReplyTo = request.ReplyTo };

@@ -40,7 +40,14 @@ public sealed class UsageCounters(TimeProvider clock)
             usage.UsedThisMinute++;
             usage.UsedToday++;
 
-            return LimitDecision.Allow;
+            if (usage.AlertedToday || usage.UsedToday < client.LimitPerDay)
+            {
+                return LimitDecision.Allow;
+            }
+
+            usage.AlertedToday = true;
+
+            return LimitDecision.AllowAndAlertOwner;
         }
     }
 
@@ -52,6 +59,8 @@ public sealed class UsageCounters(TimeProvider clock)
         public int UsedThisMinute { get; set; }
 
         public int UsedToday { get; set; }
+
+        public bool AlertedToday { get; set; }
 
         public void StartWindows(DateTime minute, DateTime day)
         {
@@ -65,6 +74,7 @@ public sealed class UsageCounters(TimeProvider clock)
             {
                 _day = day;
                 UsedToday = 0;
+                AlertedToday = false;
             }
         }
     }
