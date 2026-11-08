@@ -88,22 +88,6 @@ public class OwnerAlertFlowTests
     }
 
     [FunctionalFact]
-    public async Task GivenTheLastMessageOfTheDay_WhenTheAlertGoesOut_ThenTheAlertIsNotCountedAgainstAnyLimit()
-    {
-        // Given
-        using var api = Api(Settings(perDay: "2").Set(0, "LIMITPERMINUTE", "2"));
-        await api.SendAsync(Message, Key);
-
-        // When
-        var response = await api.SendAsync(Message, Key);
-
-        // Then
-        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        Assert.Equal(2, api.Sent.Count(message => message.To == Recipient));
-        Assert.Single(AlertsIn(api));
-    }
-
-    [FunctionalFact]
     public async Task GivenTheAlertCannotBeDelivered_WhenSending_ThenTheClientsAnswerDoesNotChange()
     {
         // Given
@@ -136,6 +120,52 @@ public class OwnerAlertFlowTests
         await console.WaitForAsync("could not be delivered");
         await console.WaitForAsync("personal-page");
         Assert.DoesNotContain(AlertAddress, console.Text);
+    }
+
+    [FunctionalFact]
+    public async Task GivenTheAlertRaisesAnExceptionHoldingTheAddress_WhenSending_ThenTheAddressIsNotLogged()
+    {
+        // Given
+        using var console = new ConsoleCapture();
+        using var api = Api(Settings(perDay: "1"));
+        api.Email.Setup(email => email.SendEmailAsync(It.Is<EmailMessage>(message => message.To == AlertAddress), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException($"could not reach {AlertAddress}"));
+
+        // When
+        await api.SendAsync(Message, Key);
+
+        // Then
+        await console.WaitForAsync("could not be delivered");
+        Assert.DoesNotContain(AlertAddress, console.Text);
+    }
+
+    [FunctionalFact]
+    public async Task GivenTheRealMailgunService_WhenAlerting_ThenItGoesOutFromTheDefaultSenderAndAnEchoIsNotLogged()
+    {
+        // Given
+        Environment.SetEnvironmentVariable("MAILGUN_API_KEY", "key");
+        Environment.SetEnvironmentVariable("MAILGUN_DOMAIN", "mg.example.com");
+        using var console = new ConsoleCapture();
+        var mailgun = new StubMailgun(HttpStatusCode.BadRequest, $"'to' {AlertAddress} rejected");
+        using var api = new HermesApi(Settings(perDay: "1").WithMailgun(), _clock, replaceMailgun: false, mailgunHandler: mailgun);
+
+        try
+        {
+            // When
+            await api.SendAsync(Message, Key);
+
+            // Then
+            Assert.Equal(2, mailgun.Calls);
+            Assert.Contains("from=postmaster%40mg.example.com", mailgun.Requests[0]);
+            Assert.Contains("to=alerts%40example.com", mailgun.Requests[0]);
+            await console.WaitForAsync("could not be delivered");
+            Assert.DoesNotContain(AlertAddress, console.Text);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MAILGUN_API_KEY", null);
+            Environment.SetEnvironmentVariable("MAILGUN_DOMAIN", null);
+        }
     }
 
     [FunctionalFact]

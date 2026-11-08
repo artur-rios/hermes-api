@@ -81,12 +81,14 @@ internal sealed class HermesApi : IDisposable
 /// <summary>Answers every request as Mailgun would, so the real service runs without reaching the network.</summary>
 internal sealed class StubMailgun(HttpStatusCode status, string responseBody) : HttpMessageHandler
 {
-    public int Calls { get; private set; }
+    public int Calls => Requests.Count;
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    public List<string> Requests { get; } = [];
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        Calls++;
+        Requests.Add(await request.Content!.ReadAsStringAsync(cancellationToken));
 
-        return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(responseBody) });
+        return new HttpResponseMessage(status) { Content = new StringContent(responseBody) };
     }
 }

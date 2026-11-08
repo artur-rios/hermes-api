@@ -1,5 +1,6 @@
 using System.Globalization;
 using ArturRios.Hermes.WebApi.Emails;
+using ArturRios.Messaging.Email;
 
 namespace ArturRios.Hermes.WebApi.Clients;
 
@@ -62,6 +63,30 @@ public static class ClientConfiguration
         else if (!Mailbox.IsAddress(alertAddress))
         {
             problems.Add($"{AlertAddressVariable} is not one valid e-mail address.");
+        }
+
+        CheckDefaultSender(configuration, mailgun, problems);
+    }
+
+    /// <summary>The owner's alerts go out from this sender, so a bad one must not wait for a client to use up its day.</summary>
+    private static void CheckDefaultSender(IConfiguration configuration, MailgunSettings mailgun, List<string> problems)
+    {
+        var sender = configuration[MailgunEmailService.FromVariable];
+
+        if (!mailgun.IsConfigured || string.IsNullOrWhiteSpace(sender))
+        {
+            return;
+        }
+
+        var address = Mailbox.AddressOfSender(sender);
+
+        if (address is null)
+        {
+            problems.Add($"{MailgunEmailService.FromVariable} is not one e-mail address, optionally with a display name.");
+        }
+        else if (!string.Equals(Mailbox.DomainOf(address), mailgun.Domain, StringComparison.OrdinalIgnoreCase))
+        {
+            problems.Add($"{MailgunEmailService.FromVariable} is not on the Mailgun domain {mailgun.Domain}.");
         }
     }
 

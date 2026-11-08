@@ -410,6 +410,47 @@ public class ClientConfigurationTests
         Assert.Contains("ID", message);
     }
 
+    [UnitTheory]
+    [InlineData("not an address")]
+    [InlineData("alerts@other.example.com")]
+    public void GivenMailgunAndAnUnusableDefaultSender_WhenLoading_ThenItRefuses(string sender)
+    {
+        // Given
+        var settings = new ClientSettings().WithMailgun().Global("MAILGUN_FROM", sender);
+
+        // When
+        var message = Refusal(settings);
+
+        // Then
+        Assert.Contains("MAILGUN_FROM", message);
+    }
+
+    [UnitFact]
+    public void GivenMailgunAndADefaultSenderOnItsDomain_WhenLoading_ThenItIsAccepted()
+    {
+        // Given
+        var settings = new ClientSettings().WithMailgun().Global("MAILGUN_FROM", "Hermes <hermes@mg.example.com>");
+
+        // When
+        var directory = Load(settings);
+
+        // Then
+        Assert.Empty(directory.Clients);
+    }
+
+    [UnitFact]
+    public void GivenNoMailgun_WhenADefaultSenderIsSet_ThenItIsNotChecked()
+    {
+        // Given
+        var settings = new ClientSettings().Global("MAILGUN_FROM", "not an address");
+
+        // When
+        var directory = Load(settings);
+
+        // Then
+        Assert.Empty(directory.Clients);
+    }
+
     [UnitFact]
     public void GivenSeveralProblems_WhenLoading_ThenTheRefusalListsThemAll()
     {

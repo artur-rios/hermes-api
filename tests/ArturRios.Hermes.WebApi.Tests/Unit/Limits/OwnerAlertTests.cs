@@ -67,6 +67,20 @@ public class OwnerAlertTests
     }
 
     [UnitFact]
+    public async Task GivenAnAlert_WhenItIsSent_ThenNothingCanCancelIt()
+    {
+        // Given
+        Answer(new ProcessOutput());
+
+        // When
+        await Alert().SendAsync(Client);
+
+        // Then
+        var token = (CancellationToken)Assert.Single(_email.Invocations).Arguments[1]!;
+        Assert.False(token.CanBeCanceled);
+    }
+
+    [UnitFact]
     public async Task GivenAProviderRefusal_WhenAlerting_ThenItDoesNotThrow()
     {
         // Given

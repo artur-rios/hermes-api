@@ -11,7 +11,8 @@ public sealed record SendEmailResult(DataOutput<string?> Output, int? RetryAfter
 
 /// <summary>
 /// Handles one send, with each check cheaper than or a precondition for the next: the key, the fields, the recipient,
-/// the limits, then delivery. Only a request that reaches delivery uses up quota. Logs carry the client and a
+/// the limits, the owner's alert when this message uses up the day, then delivery. Only a request that reaches
+/// delivery uses up quota. Logs carry the client and a
 /// pseudonymous reference to the recipient, and never a subject, a body or an address.
 /// </summary>
 public sealed class SendEmailHandler(

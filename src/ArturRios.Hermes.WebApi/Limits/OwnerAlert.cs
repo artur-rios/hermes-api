@@ -24,12 +24,12 @@ public sealed class OwnerAlert(IConfiguration configuration, IEmailService email
         var alert = new EmailMessage(
             address,
             $"Hermes: {client.Id} reached its daily limit",
-            $"Client {client.Id} has used up its daily limit of {client.LimitPerDay} messages. "
+            $"Client {client.Id} has used up its daily limit of {client.LimitPerDay}. "
             + "This means likely abuse or a limit set too low. It can send again after midnight UTC.");
 
         if (await DeliverAsync(alert))
         {
-            logger.LogInformation("Alerted the owner that client {ClientId} reached its daily limit", client.Id);
+            logger.LogInformation("Handed over the alert that client {ClientId} reached its daily limit", client.Id);
         }
         else
         {
