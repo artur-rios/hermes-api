@@ -1,0 +1,3 @@
+# Read by a Linux shell inside the containers and on CI. Checked out with CRLF on Windows they fail at
+# the shebang, so they are pinned to LF regardless of core.autocrlf.
+*.sh text eol=lf

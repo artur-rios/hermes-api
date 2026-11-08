@@ -46,7 +46,7 @@ them.
 
 | Package | Version | Used by | Role |
 | --- | --- | --- | --- |
-| **ArturRios.Messaging** | The release produced by the foundation issue | Web API | Delivery through Mailgun. The release Heimdall pins today, `1.4.0`, has no per-message sender or reply-to, so it cannot be used as it is. |
+| **ArturRios.Messaging** | `1.5.0` | Web API | Delivery through Mailgun. This is the first release with a per-message sender and reply-to. |
 | **ArturRios.Util** | `2.1.0` | Web API | The `DataOutput` result model. |
 | **ArturRios.Util.WebApi** | `5.1.0` | Web API | Mapping results to HTTP responses, and shared ASP.NET Core wiring. |
 
@@ -132,7 +132,7 @@ canonical list of the tools and versions.
 | Platform | .NET SDK in `global.json` | `10.0.113` |
 | Platform | .NET SDK build image | `10.0.402` |
 | Language | C# | Framework default |
-| First-party | ArturRios.Messaging | The release produced by the foundation issue |
+| First-party | ArturRios.Messaging | `1.5.0` |
 | First-party | ArturRios.Util | `2.1.0` |
 | First-party | ArturRios.Util.WebApi | `5.1.0` |
 | Validation | FluentValidation | `12.2.0` |

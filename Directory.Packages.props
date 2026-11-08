@@ -1,0 +1,46 @@
+<Project>
+
+  <!--
+    Central package management for every project. A PackageReference names a package; this file alone
+    decides its version, and transitive pinning makes the versions below win over whatever a
+    dependency asked for. The Technology Stack Document says why each one is here.
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="ArturRios.Messaging" Version="1.5.0" />
+    <PackageVersion Include="ArturRios.Util" Version="2.1.0" />
+    <PackageVersion Include="ArturRios.Util.WebApi" Version="5.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="FluentValidation" Version="12.2.0" />
+    <PackageVersion Include="Serilog" Version="4.4.0" />
+    <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+  </ItemGroup>
+
+  <!--
+    The exporter is a pre-release because OpenTelemetry has never shipped a stable one. The four are
+    released together and kept on the same line.
+  -->
+  <ItemGroup>
+    <PackageVersion Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.19.1-beta.1" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.19.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.19.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.19.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="ArturRios.Util.Test" Version="5.0.0" />
+    <PackageVersion Include="Bogus" Version="35.6.5" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageVersion Include="Moq" Version="4.21.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.1.0" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
+    <PackageVersion Include="xunit.v3.mtp-off" Version="4.0.2" />
+  </ItemGroup>
+
+</Project>
