@@ -344,6 +344,73 @@ public class ClientConfigurationTests
     }
 
     [UnitFact]
+    public void GivenAnInvalidSecondKeyHash_WhenLoading_ThenItRefuses()
+    {
+        // Given
+        var settings = new ClientSettings().Client(0, "personal-page").Set(0, "KEYHASHES:1", "abc123");
+
+        // When
+        var message = Refusal(settings);
+
+        // Then
+        Assert.Contains("KEYHASHES", message);
+    }
+
+    [UnitFact]
+    public void GivenASecondKeySharedWithAnotherClient_WhenLoading_ThenItRefuses()
+    {
+        // Given
+        var shared = ClientSettings.KeyHash();
+        var settings = new ClientSettings().Client(0, "first", shared).Client(1, "second").Set(1, "KEYHASHES:1", shared);
+
+        // When
+        var message = Refusal(settings);
+
+        // Then
+        Assert.Contains("second", message);
+        Assert.Contains("KEYHASHES", message);
+    }
+
+    [UnitFact]
+    public void GivenAnInvalidSecondRecipient_WhenLoading_ThenItRefuses()
+    {
+        // Given
+        var settings = new ClientSettings().Client(0, "personal-page").Set(0, "ALLOWEDRECIPIENTS:1", "not-an-address");
+
+        // When
+        var message = Refusal(settings);
+
+        // Then
+        Assert.Contains("ALLOWEDRECIPIENTS", message);
+    }
+
+    [UnitFact]
+    public void GivenAGapInTheIndexes_WhenAClientHasNoId_ThenItIsNamedByItsOwnIndex()
+    {
+        // Given
+        var settings = new ClientSettings().Client(0, "first").Client(2, "third").Remove(2, "ID");
+
+        // When
+        var message = Refusal(settings);
+
+        // Then
+        Assert.Contains("#2", message);
+    }
+
+    [UnitFact]
+    public void GivenIdsDifferingOnlyInSurroundingSpaces_WhenLoading_ThenItRefuses()
+    {
+        // Given
+        var settings = new ClientSettings().Client(0, "personal-page").Client(1, "personal-page ");
+
+        // When
+        var message = Refusal(settings);
+
+        // Then
+        Assert.Contains("ID", message);
+    }
+
+    [UnitFact]
     public void GivenSeveralProblems_WhenLoading_ThenTheRefusalListsThemAll()
     {
         // Given

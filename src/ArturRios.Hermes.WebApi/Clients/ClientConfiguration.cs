@@ -27,7 +27,7 @@ public static class ClientConfiguration
         CheckEnvironment(configuration, mailgun, isProduction, problems);
 
         var clients = configuration.GetSection(ClientsSection).GetChildren()
-            .Select((section, position) => ReadClient(section, position, mailgun, problems))
+            .Select(section => ReadClient(section, mailgun, problems))
             .OfType<Client>()
             .ToList();
 
@@ -65,15 +65,15 @@ public static class ClientConfiguration
         }
     }
 
-    private static Client? ReadClient(IConfigurationSection section, int position, MailgunSettings mailgun, List<string> problems)
+    private static Client? ReadClient(IConfigurationSection section, MailgunSettings mailgun, List<string> problems)
     {
-        var id = section["ID"];
-        var name = string.IsNullOrWhiteSpace(id) ? $"#{position}" : id;
+        var id = section["ID"]?.Trim();
+        var name = string.IsNullOrEmpty(id) ? $"#{section.Key}" : id;
         var countBefore = problems.Count;
 
         void Problem(string text) => problems.Add($"Client '{name}': {text}");
 
-        if (string.IsNullOrWhiteSpace(id))
+        if (string.IsNullOrEmpty(id))
         {
             Problem("ID is required.");
         }
