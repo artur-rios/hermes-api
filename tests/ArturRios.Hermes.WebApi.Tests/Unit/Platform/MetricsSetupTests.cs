@@ -18,18 +18,39 @@ public class MetricsSetupTests
     [UnitFact]
     public void GivenTheMetricsPort_WhenThePathIsMetrics_ThenItIsAScrape()
     {
-        Assert.True(MetricsSetup.IsScrapeRequest(Request(9464, "/metrics")));
+        // Given
+        var request = Request(9464, "/metrics");
+
+        // When
+        var isScrape = MetricsSetup.IsScrapeRequest(request);
+
+        // Then
+        Assert.True(isScrape);
     }
 
     [UnitFact]
     public void GivenTheApiPort_WhenThePathIsMetrics_ThenItIsNotAScrape()
     {
-        Assert.False(MetricsSetup.IsScrapeRequest(Request(8080, "/metrics")));
+        // Given
+        var request = Request(8080, "/metrics");
+
+        // When
+        var isScrape = MetricsSetup.IsScrapeRequest(request);
+
+        // Then
+        Assert.False(isScrape);
     }
 
     [UnitFact]
     public void GivenTheMetricsPort_WhenThePathIsNotMetrics_ThenItIsNotAScrape()
     {
-        Assert.False(MetricsSetup.IsScrapeRequest(Request(9464, "/healthcheck")));
+        // Given
+        var request = Request(9464, "/healthcheck");
+
+        // When
+        var isScrape = MetricsSetup.IsScrapeRequest(request);
+
+        // Then
+        Assert.False(isScrape);
     }
 }

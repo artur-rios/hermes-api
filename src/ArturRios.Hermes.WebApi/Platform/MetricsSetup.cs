@@ -28,8 +28,20 @@ public static class MetricsSetup
                 .AddPrometheusExporter());
 
     /// <summary>
-    /// Mounts the scrape endpoint. It is a terminal branch, so this goes first: a scrape reaches nothing else in the
-    /// pipeline and is not written to the request log.
+    /// Mounts the scrape endpoint and closes the rest of the metrics port. Both are terminal branches, so this goes
+    /// first: a scrape is not written to the request log, and the telemetry network cannot reach the API.
     /// </summary>
-    public static void Use(IApplicationBuilder app) => app.UseOpenTelemetryPrometheusScrapingEndpoint(IsScrapeRequest);
+    public static void Use(IApplicationBuilder app)
+    {
+        app.UseOpenTelemetryPrometheusScrapingEndpoint(IsScrapeRequest);
+
+        app.MapWhen(
+            context => context.Connection.LocalPort == Port,
+            metricsPort => metricsPort.Run(context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status404NotFound;
+
+                return Task.CompletedTask;
+            }));
+    }
 }
