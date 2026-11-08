@@ -1,0 +1,16 @@
+# What Jenkins checks for this repository, read by the pipeline of the yggdrasil installation that deploys it
+# (yggdrasil's docs/catalog.md, "Repository pipeline file", has every field). The commands are scripts under ci/ that
+# run from the repository's root, so you can run them on your own machine too.
+#
+# Check it where the catalog is, in the yggdrasil checkout:
+#   python3 scripts/pipeline_config.py describe hermes-api <this repository's checkout>
+
+checks:
+  test:                                  # restore, build, unit and functional tests, the coverage floor (ci/test.sh)
+    image: mcr.microsoft.com/dotnet/sdk:10.0.402@sha256:747cbade5bfd918a175ac32f8f1d931edec2c7d0d5397a3de72eaef1ac1f66d2
+    run: ci/test.sh
+    archive: "artifacts/coverage/**"     # the coverage report
+  docker:                                # the container image can still be built (ci/docker.sh)
+    image: docker:29.7.2-cli@sha256:3f4743208d2338c934d7b8bcfbe1bb54c0b2355c510ad5e0f31c0c4a54bd704e
+    run: ci/docker.sh
+    docker: true                         # the CI engine's socket: the image is built by it

@@ -4,7 +4,7 @@ Hermes is an internal HTTP service that sends plain text email on behalf of my o
 project calls it with its own API key, and Hermes applies that project's rules and delivers the
 message through Mailgun. It has no public route: it is reachable only on the Docker network.
 
-> **Status:** specification complete, implementation not started.
+> **Status:** foundation in place, email sending not implemented yet.
 
 ## What it does
 

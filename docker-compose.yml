@@ -1,0 +1,31 @@
+# One file for the four environments: what differs between them is configuration. Local is deployed by hand, from a
+# copy of the template:
+#
+#     cp docker/local.env.example docker/local.env
+#     docker compose up -d --build
+#
+# Development, Homologation and Production are deployed by yggdrasil, which applies its stacks/hermes-api.proxy.yml on
+# top of this file (no host port, the edge and telemetry networks) and sets APP_ENV_FILE to the file kept at
+# /etc/yggdrasil/<environment>/hermes-api.env. Clients are indexed variables, so the whole file goes to the container
+# rather than being listed here.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${API_IMAGE:-hermes-api}:${API_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-docker/local.env}
+    ports:
+      - "127.0.0.1:${API_PORT:-5090}:8080"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
