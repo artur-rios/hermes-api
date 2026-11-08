@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
@@ -23,7 +24,8 @@ internal sealed class HermesApi : IDisposable
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public HermesApi(ClientSettings settings, TestClock? clock = null, bool replaceMailgun = true)
+    public HermesApi(
+        ClientSettings settings, TestClock? clock = null, bool replaceMailgun = true, HttpMessageHandler? mailgunHandler = null)
     {
         Email.Setup(email => email.SendEmailAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
             .Callback<EmailMessage, CancellationToken>((message, _) => Sent.Add(message))
@@ -37,6 +39,11 @@ internal sealed class HermesApi : IDisposable
                 if (replaceMailgun)
                 {
                     services.AddTransient(_ => Email.Object);
+                }
+
+                if (mailgunHandler is not null)
+                {
+                    services.AddHttpClient<MailgunEmailService>().ConfigurePrimaryHttpMessageHandler(() => mailgunHandler);
                 }
 
                 if (clock is not null)
@@ -69,4 +76,17 @@ internal sealed class HermesApi : IDisposable
     public Task<HttpResponseMessage> SendAsync(object body, string? key) => PostAsync(JsonContent.Create(body), key);
 
     public void Dispose() => _factory.Dispose();
+}
+
+/// <summary>Answers every request as Mailgun would, so the real service runs without reaching the network.</summary>
+internal sealed class StubMailgun(HttpStatusCode status, string responseBody) : HttpMessageHandler
+{
+    public int Calls { get; private set; }
+
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        Calls++;
+
+        return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(responseBody) });
+    }
 }

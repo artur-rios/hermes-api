@@ -109,6 +109,7 @@ public class SendEmailTests
 
         // Then
         Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+        Assert.Empty(api.Sent);
     }
 
     [FunctionalFact]
@@ -124,6 +125,7 @@ public class SendEmailTests
 
         // Then
         Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+        Assert.Empty(api.Sent);
     }
 
     [FunctionalFact]
@@ -179,6 +181,7 @@ public class SendEmailTests
 
         // Then
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Empty(api.Sent);
     }
 
     [FunctionalFact]
@@ -234,6 +237,7 @@ public class SendEmailTests
 
         // Then
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Empty(api.Sent);
     }
 
     [FunctionalFact]
@@ -261,6 +265,7 @@ public class SendEmailTests
 
         // Then
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Empty(api.Sent);
     }
 
     [FunctionalFact]
@@ -417,6 +422,21 @@ public class SendEmailTests
     }
 
     [FunctionalFact]
+    public async Task GivenDeliveryFailsInAnUnexpectedWay_WhenSending_ThenAnswers502()
+    {
+        // Given
+        using var api = Api();
+        FailDeliveryWith(api, new InvalidOperationException("unexpected"));
+
+        // When
+        var response = await api.SendAsync(Valid, Key);
+
+        // Then
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+        Assert.Empty(api.Sent);
+    }
+
+    [FunctionalFact]
     public void GivenTheMailgunClient_WhenResolved_ThenItGivesUpAfterTenSeconds()
     {
         // Given
@@ -443,7 +463,7 @@ public class SendEmailTests
     }
 
     [FunctionalFact]
-    public async Task GivenMailgunIsConfigured_WhenResolvingTheService_ThenItIsMailgun()
+    public void GivenMailgunIsConfigured_WhenResolvingTheService_ThenItIsMailgun()
     {
         // Given
         using var api = new HermesApi(Settings().WithMailgun(), _clock, replaceMailgun: false);
@@ -451,7 +471,6 @@ public class SendEmailTests
         // When
         using var scope = api.Services.CreateScope();
         var service = scope.ServiceProvider.GetRequiredService<IEmailService>();
-        await Task.CompletedTask;
 
         // Then
         Assert.IsType<MailgunEmailService>(service);

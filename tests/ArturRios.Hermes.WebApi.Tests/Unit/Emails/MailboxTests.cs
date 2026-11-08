@@ -53,6 +53,10 @@ public class MailboxTests
     [InlineData("Acme <a@mg.example.com>")]
     [InlineData("a@mg.example.com, b@mg.example.com")]
     [InlineData(" a@mg.example.com")]
+    [InlineData("\"x@evil.example.com, y\"@example.com")]
+    [InlineData("a@localhost")]
+    [InlineData("a@example.com.")]
+    [InlineData("a@[127.0.0.1]")]
     public void GivenAnythingButOneBareAddress_WhenChecked_ThenItIsNotAnAddress(string? value)
     {
         // When

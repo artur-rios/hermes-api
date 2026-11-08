@@ -93,7 +93,10 @@ public sealed class SendEmailHandler(
         }
     }
 
-    /// <summary>One attempt. Failing to reach Mailgun, or its timing out, is a delivery failure; the caller going away is not.</summary>
+    /// <summary>
+    /// One attempt. Anything that goes wrong is a delivery failure, except the caller going away. Only the exception's
+    /// type is logged, because its message may hold what was being sent.
+    /// </summary>
     private async Task<bool> DeliverAsync(EmailMessage message, CancellationToken cancellationToken)
     {
         try
@@ -102,9 +105,10 @@ public sealed class SendEmailHandler(
 
             return output.Success;
         }
-        catch (Exception exception) when (exception is HttpRequestException
-                                          || (exception is TaskCanceledException && !cancellationToken.IsCancellationRequested))
+        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
         {
+            logger.LogWarning("Delivery raised {FailureType}", exception.GetType().Name);
+
             return false;
         }
     }

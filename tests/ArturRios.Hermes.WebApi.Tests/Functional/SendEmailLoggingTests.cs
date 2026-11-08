@@ -1,3 +1,4 @@
+using System.Net;
 using ArturRios.Hermes.WebApi.Emails;
 using ArturRios.Messaging.Email;
 using ArturRios.Util.Test.Attributes;
@@ -71,6 +72,51 @@ public class SendEmailLoggingTests
 
         // Then
         await console.WaitForAsync(HermesApi.Route);
+        AssertNoContentIn(console.Text);
+    }
+
+    [FunctionalFact]
+    public async Task GivenMailgunEchoesTheMessageInARefusal_WhenItIsLogged_ThenNoContentAppears()
+    {
+        // Given
+        Environment.SetEnvironmentVariable("MAILGUN_API_KEY", "key");
+        Environment.SetEnvironmentVariable("MAILGUN_DOMAIN", "mg.example.com");
+        using var console = new ConsoleCapture();
+        var refusal = new StubMailgun(HttpStatusCode.BadRequest, $"'to' {Recipient} rejected, subject {Subject}");
+        using var api = new HermesApi(Settings().WithMailgun(), replaceMailgun: false, mailgunHandler: refusal);
+
+        try
+        {
+            // When
+            var response = await api.SendAsync(Message, Key);
+
+            // Then
+            Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+            Assert.Equal(1, refusal.Calls);
+            await console.WaitForAsync("Mailgun rejected");
+            await console.WaitForAsync(HermesApi.Route);
+            AssertNoContentIn(console.Text);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MAILGUN_API_KEY", null);
+            Environment.SetEnvironmentVariable("MAILGUN_DOMAIN", null);
+        }
+    }
+
+    [FunctionalFact]
+    public async Task GivenAClientOverItsLimit_WhenItIsLogged_ThenNoContentAppears()
+    {
+        // Given
+        using var console = new ConsoleCapture();
+        using var api = new HermesApi(Settings().Set(0, "LIMITPERMINUTE", "1"));
+        await api.SendAsync(Message, Key);
+
+        // When
+        await api.SendAsync(Message, Key);
+
+        // Then
+        await console.WaitForAsync("reached a sending limit");
         AssertNoContentIn(console.Text);
     }
 
