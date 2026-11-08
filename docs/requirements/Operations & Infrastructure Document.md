@@ -135,6 +135,7 @@ field per line.
 | `MAILGUN_API_KEY` | Mailgun private key. | **Yes** |
 | `MAILGUN_DOMAIN` | The shared sending domain. | No |
 | `MAILGUN_API_VERSION` | Optional Mailgun API version override. | No |
+| `MAILGUN_FROM` | Optional sender of the owner's alerts, on the Mailgun domain. Defaults to `postmaster@` the domain. | No |
 | `HERMES_ALERT_TO` | The owner's address for alerts. | No |
 | `HERMES_CLIENTS__<n>__ID` | The client's short name. | No |
 | `HERMES_CLIENTS__<n>__KEYHASHES__<i>` | SHA-256 hash of an active key. One or two per client. | No, but keep private |

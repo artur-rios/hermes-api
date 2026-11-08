@@ -188,6 +188,95 @@ public class UsageCountersTests
     }
 
     [UnitFact]
+    public void GivenAnEarlierMessageOfTheDay_WhenCounting_ThenTheOwnerIsNotAlerted()
+    {
+        // Given
+        var counters = Counters();
+        var client = ClientWith(perMinute: 5, perDay: 2);
+
+        // When
+        var decision = counters.TryCount(client);
+
+        // Then
+        Assert.False(decision.AlertOwner);
+    }
+
+    [UnitFact]
+    public void GivenTheLastMessageOfTheDay_WhenCounting_ThenTheOwnerIsAlerted()
+    {
+        // Given
+        var counters = Counters();
+        var client = ClientWith(perMinute: 5, perDay: 2);
+        counters.TryCount(client);
+
+        // When
+        var decision = counters.TryCount(client);
+
+        // Then
+        Assert.True(decision.AlertOwner);
+    }
+
+    [UnitFact]
+    public void GivenTheOwnerWasAlerted_WhenTheClientIsRefused_ThenTheOwnerIsNotAlertedAgain()
+    {
+        // Given
+        var counters = Counters();
+        var client = ClientWith(perMinute: 5, perDay: 1);
+        counters.TryCount(client);
+
+        // When
+        var decision = counters.TryCount(client);
+
+        // Then
+        Assert.False(decision.AlertOwner);
+    }
+
+    [UnitFact]
+    public void GivenAMinuteLimitRefusal_WhenCounting_ThenTheOwnerIsNotAlerted()
+    {
+        // Given
+        var counters = Counters();
+        var client = ClientWith(perMinute: 1, perDay: 50);
+        counters.TryCount(client);
+
+        // When
+        var decision = counters.TryCount(client);
+
+        // Then
+        Assert.False(decision.AlertOwner);
+    }
+
+    [UnitFact]
+    public void GivenTheOwnerWasAlerted_WhenTheNextUtcDayIsUsedUp_ThenTheOwnerIsAlertedAgain()
+    {
+        // Given
+        var counters = Counters();
+        var client = ClientWith(perMinute: 5, perDay: 1);
+        counters.TryCount(client);
+        _clock.Now = new DateTimeOffset(2026, 11, 9, 0, 0, 0, TimeSpan.Zero);
+
+        // When
+        var decision = counters.TryCount(client);
+
+        // Then
+        Assert.True(decision.AlertOwner);
+    }
+
+    [UnitFact]
+    public void GivenOneClientAlerted_WhenAnotherUsesUpItsDay_ThenThatClientAlertsToo()
+    {
+        // Given
+        var counters = Counters();
+        counters.TryCount(ClientWith(perMinute: 5, perDay: 1, id: "first"));
+
+        // When
+        var decision = counters.TryCount(ClientWith(perMinute: 5, perDay: 1, id: "second"));
+
+        // Then
+        Assert.True(decision.AlertOwner);
+    }
+
+    [UnitFact]
     public async Task GivenConcurrentMessages_WhenCounting_ThenNoMoreThanTheLimitAreAllowed()
     {
         // Given

@@ -23,6 +23,7 @@ public static class EmailRegistration
             ? provider.GetRequiredService<MailgunEmailService>()
             : provider.GetRequiredService<LoggingEmailService>());
 
+        services.AddTransient<OwnerAlert>();
         services.AddTransient<SendEmailHandler>();
     }
 }

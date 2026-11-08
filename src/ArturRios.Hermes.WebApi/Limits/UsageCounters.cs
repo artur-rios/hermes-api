@@ -14,12 +14,13 @@ public sealed class UsageCounters(TimeProvider clock)
     /// <summary>Counts the message when the client is within both limits, and otherwise counts nothing.</summary>
     public LimitDecision TryCount(Client client)
     {
-        var now = clock.GetUtcNow().UtcDateTime;
-        var minute = new DateTime(now.Ticks - (now.Ticks % TimeSpan.TicksPerMinute), DateTimeKind.Utc);
-        var day = now.Date;
-
         lock (_lock)
         {
+            // Read under the lock, so a request that waited for it cannot move a window backwards.
+            var now = clock.GetUtcNow().UtcDateTime;
+            var minute = new DateTime(now.Ticks - (now.Ticks % TimeSpan.TicksPerMinute), DateTimeKind.Utc);
+            var day = now.Date;
+
             var usage = _usage.TryGetValue(client.Id, out var existing) ? existing : new Usage();
 
             usage.StartWindows(minute, day);
@@ -40,7 +41,14 @@ public sealed class UsageCounters(TimeProvider clock)
             usage.UsedThisMinute++;
             usage.UsedToday++;
 
-            return LimitDecision.Allow;
+            if (usage.AlertedToday || usage.UsedToday < client.LimitPerDay)
+            {
+                return LimitDecision.Allow;
+            }
+
+            usage.AlertedToday = true;
+
+            return LimitDecision.AllowAndAlertOwner;
         }
     }
 
@@ -52,6 +60,8 @@ public sealed class UsageCounters(TimeProvider clock)
         public int UsedThisMinute { get; set; }
 
         public int UsedToday { get; set; }
+
+        public bool AlertedToday { get; set; }
 
         public void StartWindows(DateTime minute, DateTime day)
         {
@@ -65,6 +75,7 @@ public sealed class UsageCounters(TimeProvider clock)
             {
                 _day = day;
                 UsedToday = 0;
+                AlertedToday = false;
             }
         }
     }

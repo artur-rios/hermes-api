@@ -16,3 +16,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   production has no Mailgun credentials or alert address.
 - `POST /api/emails` sends one plain text email for the client the API key belongs to, under that client's sender,
   recipient policy and per-minute and per-day limits. Outside production without Mailgun, it logs instead of sending.
+- The owner is emailed once per client per UTC day when a client's message uses up the last of its daily limit. A failed
+  alert is logged and does not change the client's answer.

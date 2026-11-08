@@ -11,13 +11,15 @@ public sealed record SendEmailResult(DataOutput<string?> Output, int? RetryAfter
 
 /// <summary>
 /// Handles one send, with each check cheaper than or a precondition for the next: the key, the fields, the recipient,
-/// the limits, then delivery. Only a request that reaches delivery uses up quota. Logs carry the client and a
+/// the limits, the owner's alert when this message uses up the day, then delivery. Only a request that reaches
+/// delivery uses up quota. Logs carry the client and a
 /// pseudonymous reference to the recipient, and never a subject, a body or an address.
 /// </summary>
 public sealed class SendEmailHandler(
     ClientAuthenticator authenticator,
     SendEmailRequestValidator validator,
     UsageCounters counters,
+    OwnerAlert ownerAlert,
     IEmailService emailService,
     ILogger<SendEmailHandler> logger)
 {
@@ -63,6 +65,11 @@ public sealed class SendEmailHandler(
             return new SendEmailResult(
                 DataOutput<string?>.New.WithError(SendEmailOutcomes.LimitReached),
                 decision.RetryAfterSeconds);
+        }
+
+        if (decision.AlertOwner)
+        {
+            await ownerAlert.SendAsync(client);
         }
 
         var message = new EmailMessage(to, request.Subject!, request.Body!) { From = client.Sender, ReplyTo = request.ReplyTo };
