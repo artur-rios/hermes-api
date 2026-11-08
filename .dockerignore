@@ -1,0 +1,18 @@
+# The build context is the sources the image is built from. Everything else only slows the build and,
+# for bin and obj, risks host artifacts leaking into it.
+**/bin/
+**/obj/
+.git/
+.superpowers/
+.idea/
+.vs/
+.vscode/
+ci/
+docs/
+tests/
+yggdrasil.yml
+renovate.json
+**/*.user
+**/.env
+**/.env.*
+docker/*.env
