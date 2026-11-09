@@ -95,7 +95,7 @@ pull request is opened.
 |---|---|---|---|---|
 | [M-01 — Foundation](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/88) | The repository, build, configuration, container, CI and yggdrasil entries, and the `ArturRios.Messaging` release that gives a sender and reply-to per message. | — | 1 | 1 / 1 closed |
 | [M-02 — Email sending](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/89) | A configured project can send email under its own key, sender, recipients and limits. | M-01 | 2 | 2 / 2 closed |
-| [M-03 — Operability](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/90) | The owner is told when a project reaches its daily limit, and the platform can see that Hermes is healthy. | M-01, M-02 | 2 | 1 / 2 closed |
+| [M-03 — Operability](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/90) | The owner is told when a project reaches its daily limit, and the platform can see that Hermes is healthy. | M-01, M-02 | 2 | 2 / 2 closed |
 | [M-04 — Integrations](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/91) | Visitors can send a message from the personal page, and all of Heimdall's email goes through Hermes. | M-01, M-02, M-03 | 2 | 0 / 2 closed |
 
 The counts are as of when the milestones were created. The milestone pages on Forgejo are the live view.
