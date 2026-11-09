@@ -19,7 +19,7 @@ public static class Mailbox
         MailAddress.TryCreate(value, out var mailbox)
         && string.Equals(value, mailbox.Address, StringComparison.OrdinalIgnoreCase)
         && !value.Contains('"')
-        && HasDeliverableDomain(DomainOf(value));
+        && HasDeliverableDomain(mailbox.Host);
 
     private static bool HasDeliverableDomain(string domain) =>
         domain.Contains('.') && !domain.EndsWith('.') && !domain.StartsWith('[');
@@ -62,6 +62,9 @@ public static class Mailbox
     public static string Reference(string address) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(address.Trim().ToLowerInvariant())))[..12];
 
-    /// <summary>The domain of an address already known to be valid.</summary>
+    /// <summary>
+    /// The domain of an address already known to be valid and not an address literal. It is read from the last
+    /// <c>@</c> because a sender's quoted local part can hold one.
+    /// </summary>
     public static string DomainOf(string address) => address[(address.LastIndexOf('@') + 1)..];
 }
