@@ -214,7 +214,7 @@ graph LR
 | **Description** | Moves all of Heimdall's email onto Hermes, with the same content and failure handling as before. |
 | **Preconditions** | Heimdall's client is configured with its current sender, the any-recipient policy and its limits. |
 | **Postconditions** | Heimdall's user has the email with its usual content, and Heimdall holds no Mailgun credentials. |
-| **Requirements** | FR-HE-01 through FR-HE-10 |
+| **Requirements** | FR-HE-01 through FR-HE-14 |
 
 **Main Flow**
 
@@ -244,7 +244,7 @@ graph LR
 | UC-02: Configure a client and its keys | FR-CF-01 through FR-CF-12 |
 | UC-03: Alert the owner at the daily limit | FR-AL-01 through FR-AL-05 |
 | UC-04: Send a contact message | FR-PP-01 through FR-PP-17 |
-| UC-05: Deliver Heimdall's email through Hermes | FR-HE-01 through FR-HE-10 |
+| UC-05: Deliver Heimdall's email through Hermes | FR-HE-01 through FR-HE-14 |
 
 ---
 
