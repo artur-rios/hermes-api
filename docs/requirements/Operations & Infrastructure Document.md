@@ -135,6 +135,7 @@ field per line.
 | `MAILGUN_API_KEY` | Mailgun private key. | **Yes** |
 | `MAILGUN_DOMAIN` | The shared sending domain. | No |
 | `MAILGUN_API_VERSION` | Optional Mailgun API version override. | No |
+| `MAILGUN_FROM` | Optional sender of the owner's alerts, on the Mailgun domain. Defaults to `postmaster@` the domain. | No |
 | `HERMES_ALERT_TO` | The owner's address for alerts. | No |
 | `HERMES_CLIENTS__<n>__ID` | The client's short name. | No |
 | `HERMES_CLIENTS__<n>__KEYHASHES__<i>` | SHA-256 hash of an active key. One or two per client. | No, but keep private |
@@ -158,6 +159,27 @@ The integrating projects each need these runtime settings:
 | Personal page | Turnstile site key | No |
 | Heimdall | Hermes base URL | No |
 | Heimdall | Hermes API key | **Yes** |
+| Heimdall's security alert job | Hermes base URL | No |
+| Heimdall's security alert job | The key of its own client | **Yes** |
+| Heimdall's security alert job | The security alert address | No |
+
+Production's `hermes-api.env` carries one client for each caller. Heimdall's security alert job
+(`scripts/security_signals.py`, run by yggdrasil every fifteen minutes) has its own, because Hermes counts messages
+per client: under Heimdall's client, the flood of email that raises a signal could use up the day and refuse the alert
+about it.
+
+| Setting | `heimdall-signals` |
+| --- | --- |
+| `ID` | `heimdall-signals` |
+| `SENDER` | `heimdall-signals@` the mail domain |
+| `RECIPIENTPOLICY` | `fixed` |
+| `ALLOWEDRECIPIENTS__0` | The security alert address, and no other |
+| `LIMITPERMINUTE` | `5` |
+| `LIMITPERDAY` | `200`. A run sends at most one message, so the schedule sends at most 96 |
+
+The job's key and address are in yggdrasil's `security-signals-<environment>.env`, which `docs/hosts.md` in yggdrasil
+describes. Only production needs this client: outside it Hermes logs a message and accepts it, so no alert would
+arrive.
 
 The personal page's stack passes it no runtime environment today, so yggdrasil's
 `stacks/personal-page.yml` needs an env file.

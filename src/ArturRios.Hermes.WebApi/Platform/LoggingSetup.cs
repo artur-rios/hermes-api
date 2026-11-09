@@ -15,5 +15,6 @@ public static class LoggingSetup
         .MinimumLevel.Information()
         .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
         .Enrich.FromLogContext()
+        .Enrich.With(new ProviderResponseFilter())
         .WriteTo.Console(new JsonFormatter());
 }

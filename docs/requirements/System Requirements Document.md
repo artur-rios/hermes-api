@@ -203,6 +203,10 @@ graph LR
 | FR-HE-08 | Heimdall shall call Hermes at its internal alias. |
 | FR-HE-09 | Heimdall's client shall have a recipient policy that permits any recipient. |
 | FR-HE-10 | Heimdall's client shall be limited to 60 messages per minute and 1,000 per day. |
+| FR-HE-11 | Heimdall's security alert job shall send through a client of its own, `heimdall-signals`, and never with the key of Heimdall's client. |
+| FR-HE-12 | The `heimdall-signals` client shall send as `heimdall-signals@` the mail domain. |
+| FR-HE-13 | The `heimdall-signals` client shall have a `fixed` recipient policy listing only the security alert address. |
+| FR-HE-14 | The `heimdall-signals` client shall be limited to 5 messages per minute and 200 per day. |
 
 ---
 
@@ -370,7 +374,7 @@ and redeploying, and there is no soft delete or history.
 | F-05 Client configuration | FR-CF-01 through FR-CF-12 |
 | F-06 Owner alerts | FR-AL-01 through FR-AL-05 |
 | F-07 Personal page integration | FR-PP-01 through FR-PP-17 |
-| F-08 Heimdall integration | FR-HE-01 through FR-HE-10 |
+| F-08 Heimdall integration | FR-HE-01 through FR-HE-14 |
 
 | Area | Code |
 | --- | --- |

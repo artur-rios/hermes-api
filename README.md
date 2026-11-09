@@ -4,7 +4,7 @@ Hermes is an internal HTTP service that sends plain text email on behalf of my o
 project calls it with its own API key, and Hermes applies that project's rules and delivers the
 message through Mailgun. It has no public route: it is reachable only on the Docker network.
 
-> **Status:** foundation in place, email sending not implemented yet.
+> **Status:** the first version, 1.0.0, is complete.
 
 ## What it does
 
@@ -59,6 +59,24 @@ cd hermes-api
 dotnet restore
 ```
 
+## Configuring a client
+
+Clients are indexed variables in the environment's `hermes-api.env`, one setting per line. The
+[`docker/*.env.example`](docker/local.env.example) files list them all. Hermes reads them once at startup, and refuses to
+start with a message naming the client and the setting when one is wrong.
+
+To add a client, or to give one a key, generate a key and keep only its hash:
+
+```bash
+KEY=$(openssl rand -hex 32)
+printf '%s' "$KEY" | sha256sum
+```
+
+Give the key to the client, set the hash as `HERMES_CLIENTS__<n>__KEYHASHES__0`, and deploy.
+
+To replace a key without downtime, add the new hash as the client's second key and deploy, switch the client to the new
+key, then remove the old hash and deploy again.
+
 ## Testing
 
 `dotnet test` runs the suite described in the
@@ -76,9 +94,9 @@ pull request is opened.
 | Milestone | Delivers | Depends on | Issues | Status |
 |---|---|---|---|---|
 | [M-01 — Foundation](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/88) | The repository, build, configuration, container, CI and yggdrasil entries, and the `ArturRios.Messaging` release that gives a sender and reply-to per message. | — | 1 | 1 / 1 closed |
-| [M-02 — Email sending](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/89) | A configured project can send email under its own key, sender, recipients and limits. | M-01 | 2 | 0 / 2 closed |
-| [M-03 — Operability](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/90) | The owner is told when a project reaches its daily limit, and the platform can see that Hermes is healthy. | M-01, M-02 | 2 | 0 / 2 closed |
-| [M-04 — Integrations](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/91) | Visitors can send a message from the personal page, and all of Heimdall's email goes through Hermes. | M-01, M-02, M-03 | 2 | 0 / 2 closed |
+| [M-02 — Email sending](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/89) | A configured project can send email under its own key, sender, recipients and limits. | M-01 | 2 | 2 / 2 closed |
+| [M-03 — Operability](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/90) | The owner is told when a project reaches its daily limit, and the platform can see that Hermes is healthy. | M-01, M-02 | 2 | 2 / 2 closed |
+| [M-04 — Integrations](https://git.techcraftsmen.net/artur-rios/hermes-api/milestone/91) | Visitors can send a message from the personal page, and all of Heimdall's email goes through Hermes. | M-01, M-02, M-03 | 2 | 2 / 2 closed |
 
 The counts are as of when the milestones were created. The milestone pages on Forgejo are the live view.
 
