@@ -208,7 +208,7 @@ The personal page's stack passes it no runtime environment today, so yggdrasil's
 | --- | --- | --- |
 | `GET /healthcheck` | Liveness, for Docker and yggdrasil's status API. | None, reachable only on internal networks |
 | `:9464/metrics` | Prometheus scrape over the telemetry network. | None, reachable only on the telemetry network |
-| `GET :9464/internal/health` | Detailed health for yggdrasil's status API: whether Mailgun is reachable. | None, served on the metrics port only, which Traefik does not route |
+| `GET :9464/internal/health` | Detailed health for yggdrasil's status API: whether Mailgun is reachable (a 5xx answer counts as down). | None, served on the metrics port only, which Traefik does not route |
 
 ### 5.2 Response Contract
 

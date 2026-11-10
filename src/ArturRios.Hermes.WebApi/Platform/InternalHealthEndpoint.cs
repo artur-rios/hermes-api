@@ -120,7 +120,7 @@ public static class InternalHealthEndpoint
             return result;
         }
 
-        /// <summary>Reachability only: any HTTP answer counts, and the call carries no key and uses no quota.</summary>
+        /// <summary>Reachability only: a 2xx-4xx answer counts, a 5xx is an outage with the edge up, and the call carries no key and uses no quota.</summary>
         private async Task<Service> ProbeAsync()
         {
             if (!settings.IsConfigured)
@@ -134,7 +134,9 @@ public static class InternalHealthEndpoint
             using var response = await clients.CreateClient(ClientName)
                 .GetAsync(MailgunAddress, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
 
-            return new Service("Mailgun", Statuses.Healthy);
+            return (int)response.StatusCode >= 500
+                ? new Service("Mailgun", Statuses.Unhealthy, $"HTTP {(int)response.StatusCode}")
+                : new Service("Mailgun", Statuses.Healthy);
         }
     }
 

@@ -73,7 +73,7 @@ public class InternalHealthEndpointTests
     }
 
     [UnitFact]
-    public async Task GivenMailgunAnswers500_WhenRequestedOnMetricsPort_ThenStillHealthy()
+    public async Task GivenMailgunAnswers500_WhenRequestedOnMetricsPort_ThenDegradedWithHttpReason()
     {
         // Given
         using var factory = Application(MetricsSetup.Port, new Answering(HttpStatusCode.InternalServerError));
@@ -84,6 +84,22 @@ public class InternalHealthEndpointTests
 
         // Then
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Degraded", report.GetProperty("status").GetString());
+        Assert.Equal("Unhealthy", report.GetProperty("services")[0].GetProperty("status").GetString());
+        Assert.Equal("HTTP 500", report.GetProperty("services")[0].GetProperty("reason").GetString());
+    }
+
+    [UnitFact]
+    public async Task GivenMailgunAnswers404_WhenRequestedOnMetricsPort_ThenStillHealthy()
+    {
+        // Given
+        using var factory = Application(MetricsSetup.Port, new Answering(HttpStatusCode.NotFound));
+
+        // When
+        var response = await factory.CreateClient().GetAsync(InternalHealthEndpoint.Route, TestContext.Current.CancellationToken);
+        var report = await ReadAsync(response);
+
+        // Then
         Assert.Equal("Healthy", report.GetProperty("status").GetString());
     }
 
