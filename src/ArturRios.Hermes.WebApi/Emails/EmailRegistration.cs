@@ -1,5 +1,6 @@
 using ArturRios.Hermes.WebApi.Clients;
 using ArturRios.Hermes.WebApi.Limits;
+using ArturRios.Hermes.WebApi.Platform;
 using ArturRios.Messaging.Email;
 
 namespace ArturRios.Hermes.WebApi.Emails;
@@ -17,6 +18,8 @@ public static class EmailRegistration
         services.AddSingleton<LoggingEmailService>();
         services.AddSingleton(provider => MailgunSettings.From(provider.GetRequiredService<IConfiguration>()));
         services.AddHttpClient<MailgunEmailService>(client => client.Timeout = MailgunTimeout);
+
+        InternalHealthEndpoint.Add(services);
 
         // Decided on each resolve from the configuration, which production has already checked at startup.
         services.AddTransient<IEmailService>(provider => provider.GetRequiredService<MailgunSettings>().IsConfigured

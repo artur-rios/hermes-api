@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-10
+
+### Added
+
+- `GET /internal/health` on the metrics port (9464) reports whether Mailgun is reachable, as `Healthy`, `Degraded`
+  (unreachable or answering 5xx, with a reason word) or `NotConfigured`, in a bare JSON report that holds only
+  names, statuses and reasons. It needs no credential, is never served on the application port, and sends no email.
+
 ## [1.0.0] - 2026-11-09
 
 ### Added
