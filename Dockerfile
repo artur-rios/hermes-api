@@ -2,7 +2,7 @@
 
 # Both images are pinned by version and digest, so a rebuild gets the same toolchain and runtime until someone bumps
 # them on purpose. global.json is not copied in: the SDK the image carries is the one it builds with.
-FROM mcr.microsoft.com/dotnet/sdk:10.0.402@sha256:747cbade5bfd918a175ac32f8f1d931edec2c7d0d5397a3de72eaef1ac1f66d2 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.404@sha256:fe0fd4e93bd2fbb47c883b7a6369e5c8d3db8bf01cdc5981f6ee35fbdf3ff4fb AS build
 WORKDIR /source
 
 # Restored on their own so the package layer survives a source-only change. Restore cannot evaluate the project
@@ -16,7 +16,7 @@ COPY src/ src/
 RUN dotnet publish src/ArturRios.Hermes.WebApi/ArturRios.Hermes.WebApi.csproj \
         --configuration Release --no-restore --output /app
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.13@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.15@sha256:bfd912c83295ce66d4b706ebb8541b9f14259b0e76fbb88b2751f58ce2399d2e AS final
 WORKDIR /app
 
 # For the container health check alone: the runtime image ships neither curl nor wget.
