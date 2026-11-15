@@ -7,6 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- The `ArturRios.*` packages are on their newest releases: `ArturRios.Util.WebApi` 5.2.0 → 6.0.0,
+  `ArturRios.Messaging` 1.5.0 → 1.5.1, `ArturRios.Util` 2.2.0 → 2.2.1 and, test-only, `ArturRios.Util.Test` 5.0.1 →
+  6.0.0. `ArturRios.Util.WebApi` 6.0.0 brings `ArturRios.Configuration` 2.0.0, which no longer lets a `.env` file
+  override an environment variable the process already has, and `Swashbuckle.AspNetCore` 11.0.1 on `Microsoft.OpenApi`
+  3.11.0. Hermes reads its settings from the environment and loads no `.env` file, and serves no OpenAPI document, so
+  neither changes how it runs. The HTTP API is unchanged.
+
 ## [1.1.0] - 2026-11-10
 
 ### Added
