@@ -277,6 +277,65 @@ public class UsageCountersTests
     }
 
     [UnitFact]
+    public void GivenAClockOnALocalOffset_WhenTheDayIsUsedUp_ThenItIsRefusedUntilMidnightUtcNotLocalMidnight()
+    {
+        // Given: 22:00 on the 8th in Brasilia is 01:00 UTC on the 9th.
+        _clock.Now = new DateTimeOffset(2026, 11, 8, 22, 0, 0, TimeSpan.FromHours(-3));
+        var counters = Counters();
+        var client = ClientWith(perMinute: 5, perDay: 1);
+        counters.TryCount(client);
+
+        // When
+        var decision = counters.TryCount(client);
+
+        // Then
+        Assert.False(decision.Allowed);
+        Assert.Equal((int)TimeSpan.FromHours(23).TotalSeconds, decision.RetryAfterSeconds);
+    }
+
+    [UnitFact]
+    public void GivenAClockOnALocalOffset_WhenLocalMidnightPasses_ThenTheDayIsNotRenewed()
+    {
+        // Given: 23:30 and 00:30 in Brasilia are 02:30 and 03:30 UTC of the same day.
+        _clock.Now = new DateTimeOffset(2026, 11, 8, 23, 30, 0, TimeSpan.FromHours(-3));
+        var counters = Counters();
+        var client = ClientWith(perMinute: 5, perDay: 1);
+        counters.TryCount(client);
+        _clock.Now = new DateTimeOffset(2026, 11, 9, 0, 30, 0, TimeSpan.FromHours(-3));
+
+        // When
+        var decision = counters.TryCount(client);
+
+        // Then
+        Assert.False(decision.Allowed);
+    }
+
+    [UnitFact]
+    public void GivenTwoClientRecordsWithTheSameId_WhenCounting_ThenTheyShareOneUsage()
+    {
+        // Given
+        var counters = Counters();
+        counters.TryCount(ClientWith(perMinute: 1, perDay: 50, id: "personal-page"));
+
+        // When
+        var decision = counters.TryCount(ClientWith(perMinute: 1, perDay: 50, id: "personal-page"));
+
+        // Then
+        Assert.False(decision.Allowed);
+    }
+
+    [UnitFact]
+    public void GivenAnAllowedMessage_WhenCounting_ThenThereIsNoRetryAfter()
+    {
+        // When
+        var decision = Counters().TryCount(ClientWith(perMinute: 5, perDay: 50));
+
+        // Then
+        Assert.True(decision.Allowed);
+        Assert.Equal(0, decision.RetryAfterSeconds);
+    }
+
+    [UnitFact]
     public async Task GivenConcurrentMessages_WhenCounting_ThenNoMoreThanTheLimitAreAllowed()
     {
         // Given

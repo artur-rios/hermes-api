@@ -8,10 +8,10 @@ namespace ArturRios.Hermes.WebApi.Tests.Unit.Clients;
 
 public class ClientAuthenticatorTests
 {
-    private static readonly Faker Faker = new();
+    private static readonly Randomizer Random = new();
 
-    private readonly string _firstKey = Faker.Random.AlphaNumeric(40);
-    private readonly string _secondKey = Faker.Random.AlphaNumeric(40);
+    private readonly string _firstKey = Random.AlphaNumeric(40);
+    private readonly string _secondKey = Random.AlphaNumeric(40);
 
     private static string Hash(string key) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(key)));
 
@@ -87,6 +87,39 @@ public class ClientAuthenticatorTests
 
         // When
         var client = authenticator.Authenticate(authorization);
+
+        // Then
+        Assert.Null(client);
+    }
+
+    [UnitFact]
+    public void GivenNoClients_WhenAuthenticating_ThenNoClientIsReturned()
+    {
+        // Given
+        var authenticator = new ClientAuthenticator(new ClientDirectory([]));
+
+        // When
+        var client = authenticator.Authenticate($"Bearer {_firstKey}");
+
+        // Then
+        Assert.Null(client);
+    }
+
+    [UnitFact]
+    public void GivenAnUppercaseScheme_WhenAuthenticating_ThenTheKeyIsStillRead()
+    {
+        // When
+        var client = Authenticator().Authenticate($"BEARER {_firstKey}");
+
+        // Then
+        Assert.Equal("first", client?.Id);
+    }
+
+    [UnitFact]
+    public void GivenAnActiveKeyWithACharacterMore_WhenAuthenticating_ThenNoClientIsReturned()
+    {
+        // When
+        var client = Authenticator().Authenticate($"Bearer {_firstKey}x");
 
         // Then
         Assert.Null(client);

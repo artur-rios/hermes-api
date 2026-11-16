@@ -143,29 +143,20 @@ public class OwnerAlertFlowTests
     public async Task GivenTheRealMailgunService_WhenAlerting_ThenItGoesOutFromTheDefaultSenderAndAnEchoIsNotLogged()
     {
         // Given
-        Environment.SetEnvironmentVariable("MAILGUN_API_KEY", "key");
-        Environment.SetEnvironmentVariable("MAILGUN_DOMAIN", "mg.example.com");
+        using var environment = EnvironmentVariables.WithMailgun();
         using var console = new ConsoleCapture();
         var mailgun = new StubMailgun(HttpStatusCode.BadRequest, $"'to' {AlertAddress} rejected");
         using var api = new HermesApi(Settings(perDay: "1").WithMailgun(), _clock, replaceMailgun: false, mailgunHandler: mailgun);
 
-        try
-        {
-            // When
-            await api.SendAsync(Message, Key);
+        // When
+        await api.SendAsync(Message, Key);
 
-            // Then
-            Assert.Equal(2, mailgun.Calls);
-            Assert.Contains("from=postmaster%40mg.example.com", mailgun.Requests[0]);
-            Assert.Contains("to=alerts%40example.com", mailgun.Requests[0]);
-            await console.WaitForAsync("could not be delivered");
-            Assert.DoesNotContain(AlertAddress, console.Text);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("MAILGUN_API_KEY", null);
-            Environment.SetEnvironmentVariable("MAILGUN_DOMAIN", null);
-        }
+        // Then
+        Assert.Equal(2, mailgun.Calls);
+        Assert.Contains("from=postmaster%40mg.example.com", mailgun.Requests[0]);
+        Assert.Contains("to=alerts%40example.com", mailgun.Requests[0]);
+        await console.WaitForAsync("could not be delivered");
+        Assert.DoesNotContain(AlertAddress, console.Text);
     }
 
     [FunctionalFact]

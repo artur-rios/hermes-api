@@ -12,4 +12,9 @@
     <PackageReference Include="Serilog.AspNetCore" />
   </ItemGroup>
 
+  <!-- The tests call the health check's internals directly, to order callers without sleeping. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="ArturRios.Hermes.WebApi.Tests" />
+  </ItemGroup>
+
 </Project>

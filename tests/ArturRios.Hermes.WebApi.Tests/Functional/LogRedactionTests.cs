@@ -8,7 +8,7 @@ namespace ArturRios.Hermes.WebApi.Tests.Functional;
 [Collection(ProcessStateCollection.Name)]
 public class LogRedactionTests() : WebApiTest<Program>(EnvironmentType.Local)
 {
-    private readonly string _apiKey = new Faker().Random.AlphaNumeric(40);
+    private readonly string _apiKey = new Randomizer().AlphaNumeric(40);
 
     private async Task AssertTheKeyIsNotLoggedWhenRequesting(string route)
     {

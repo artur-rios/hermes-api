@@ -19,46 +19,36 @@ public class StartupRefusalTests
     public async Task GivenAnInvalidClient_WhenTheApplicationStarts_ThenItExitsNamingTheClient()
     {
         // Given
+        // The environment is set, not inherited: WebApiTest leaves the variable at whatever its last test used, and
+        // unset it would mean production, which refuses for reasons of its own.
+        using var environment = new EnvironmentVariables(
+            (EnvironmentVariable, "local"), (InvalidClientVariable, "personal-page"));
         using var console = new ConsoleCapture();
-        Environment.SetEnvironmentVariable(InvalidClientVariable, "personal-page");
 
-        try
-        {
-            // When
-            var exitCode = await RunMain();
+        // When
+        var exitCode = await RunMain();
 
-            // Then
-            Assert.Equal(1, exitCode);
-            Assert.Contains("personal-page", console.Text);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable(InvalidClientVariable, null);
-        }
+        // Then
+        Assert.Equal(1, exitCode);
+        Assert.Contains("personal-page", console.Text);
+        Assert.Contains("SENDER is required", console.Text);
+        Assert.DoesNotContain("is required in production", console.Text);
     }
 
     [FunctionalFact]
     public async Task GivenProductionWithoutMailgunOrAnAlertAddress_WhenTheApplicationStarts_ThenItExitsNamingThem()
     {
         // Given
-        var previous = Environment.GetEnvironmentVariable(EnvironmentVariable);
+        using var environment = new EnvironmentVariables((EnvironmentVariable, "Production"));
         using var console = new ConsoleCapture();
-        Environment.SetEnvironmentVariable(EnvironmentVariable, "Production");
 
-        try
-        {
-            // When
-            var exitCode = await RunMain();
+        // When
+        var exitCode = await RunMain();
 
-            // Then
-            Assert.Equal(1, exitCode);
-            Assert.Contains("MAILGUN_API_KEY", console.Text);
-            Assert.Contains("MAILGUN_DOMAIN", console.Text);
-            Assert.Contains("HERMES_ALERT_TO", console.Text);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable(EnvironmentVariable, previous);
-        }
+        // Then
+        Assert.Equal(1, exitCode);
+        Assert.Contains("MAILGUN_API_KEY", console.Text);
+        Assert.Contains("MAILGUN_DOMAIN", console.Text);
+        Assert.Contains("HERMES_ALERT_TO", console.Text);
     }
 }

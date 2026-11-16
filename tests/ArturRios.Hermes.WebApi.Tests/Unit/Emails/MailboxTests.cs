@@ -11,13 +11,15 @@ public class MailboxTests
     [InlineData(Address)]
     [InlineData("Acme <a@mg.example.com>")]
     [InlineData("\"Acme, Inc\" <a@mg.example.com>")]
+    [InlineData("Acme <A@MG.example.com>")]
+    [InlineData("Acme   <a@mg.example.com>")]
     public void GivenOneMailbox_WhenReadingTheSender_ThenItsAddressIsReturned(string sender)
     {
         // When
         var address = Mailbox.AddressOfSender(sender);
 
         // Then
-        Assert.Equal(Address, address);
+        Assert.Equal(Address, address, ignoreCase: true);
     }
 
     [UnitTheory]
@@ -27,7 +29,11 @@ public class MailboxTests
     [InlineData("x@other.example.com, y <a@mg.example.com>")]
     [InlineData("\"x\" <e@other.example.com>, \"y\" <a@mg.example.com>")]
     [InlineData("a@mg.example.com\r\nBcc: c@example.com")]
-    public void GivenAnythingButOneMailbox_WhenReadingTheSender_ThenThereIsNoAddress(string sender)
+    [InlineData(null)]
+    [InlineData("x@other.example.com <a@mg.example.com>")]
+    [InlineData("Acme; Inc <a@mg.example.com>")]
+    [InlineData("Acme <a@mg.example.com> trailing")]
+    public void GivenAnythingButOneMailbox_WhenReadingTheSender_ThenThereIsNoAddress(string? sender)
     {
         // When
         var address = Mailbox.AddressOfSender(sender);
@@ -36,11 +42,14 @@ public class MailboxTests
         Assert.Null(address);
     }
 
-    [UnitFact]
-    public void GivenOneAddress_WhenChecked_ThenItIsAnAddress()
+    [UnitTheory]
+    [InlineData(Address)]
+    [InlineData("A@MG.Example.com")]
+    [InlineData("first.last+tag@sub.mg.example.com")]
+    public void GivenOneAddress_WhenChecked_ThenItIsAnAddress(string value)
     {
         // When
-        var isAddress = Mailbox.IsAddress(Address);
+        var isAddress = Mailbox.IsAddress(value);
 
         // Then
         Assert.True(isAddress);
@@ -53,6 +62,8 @@ public class MailboxTests
     [InlineData("Acme <a@mg.example.com>")]
     [InlineData("a@mg.example.com, b@mg.example.com")]
     [InlineData(" a@mg.example.com")]
+    [InlineData("a@mg.example.com ")]
+    [InlineData("<a@mg.example.com>")]
     [InlineData("\"x@evil.example.com, y\"@example.com")]
     [InlineData("a@localhost")]
     [InlineData("a@example.com.")]
@@ -82,11 +93,13 @@ public class MailboxTests
         Assert.Equal(hash[..12], reference);
     }
 
-    [UnitFact]
-    public void GivenAnAddress_WhenReadingItsDomain_ThenItIsWhatFollowsTheAt()
+    [UnitTheory]
+    [InlineData(Address)]
+    [InlineData("\"a@b\"@mg.example.com")]
+    public void GivenAnAddress_WhenReadingItsDomain_ThenItIsWhatFollowsTheLastAt(string address)
     {
         // When
-        var domain = Mailbox.DomainOf(Address);
+        var domain = Mailbox.DomainOf(address);
 
         // Then
         Assert.Equal("mg.example.com", domain);
