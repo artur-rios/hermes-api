@@ -8,10 +8,10 @@ namespace ArturRios.Hermes.WebApi.Tests.Unit.Clients;
 
 public class ClientAuthenticatorTests
 {
-    private static readonly Faker Faker = new();
+    private static readonly Randomizer Random = new();
 
-    private readonly string _firstKey = Faker.Random.AlphaNumeric(40);
-    private readonly string _secondKey = Faker.Random.AlphaNumeric(40);
+    private readonly string _firstKey = Random.AlphaNumeric(40);
+    private readonly string _secondKey = Random.AlphaNumeric(40);
 
     private static string Hash(string key) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(key)));
 

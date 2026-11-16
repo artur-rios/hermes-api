@@ -8,11 +8,13 @@ namespace ArturRios.Hermes.WebApi.Tests;
 /// </summary>
 internal sealed class ClientSettings
 {
-    private static readonly Faker Faker = new();
+    // A Randomizer, not a Faker: a Faker loads Bogus's locale data on first use, about two seconds of the run, and
+    // these values need none of it.
+    private static readonly Randomizer Random = new();
 
     private readonly Dictionary<string, string?> _values = new(StringComparer.OrdinalIgnoreCase);
 
-    public static string KeyHash() => Faker.Random.Hexadecimal(64, string.Empty).ToLowerInvariant();
+    public static string KeyHash() => Random.Hexadecimal(64, string.Empty).ToLowerInvariant();
 
     /// <summary>A client with every required setting, under a <c>fixed</c> policy.</summary>
     public ClientSettings Client(int index, string id, string? keyHash = null, string sender = "Client <client@mg.example.com>")
