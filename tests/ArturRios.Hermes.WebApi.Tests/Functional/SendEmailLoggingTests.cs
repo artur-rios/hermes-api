@@ -79,29 +79,20 @@ public class SendEmailLoggingTests
     public async Task GivenMailgunEchoesTheMessageInARefusal_WhenItIsLogged_ThenNoContentAppears()
     {
         // Given
-        Environment.SetEnvironmentVariable("MAILGUN_API_KEY", "key");
-        Environment.SetEnvironmentVariable("MAILGUN_DOMAIN", "mg.example.com");
+        using var environment = EnvironmentVariables.WithMailgun();
         using var console = new ConsoleCapture();
         var refusal = new StubMailgun(HttpStatusCode.BadRequest, $"'to' {Recipient} rejected, subject {Subject}");
         using var api = new HermesApi(Settings().WithMailgun(), replaceMailgun: false, mailgunHandler: refusal);
 
-        try
-        {
-            // When
-            var response = await api.SendAsync(Message, Key);
+        // When
+        var response = await api.SendAsync(Message, Key);
 
-            // Then
-            Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
-            Assert.Equal(1, refusal.Calls);
-            await console.WaitForAsync("Mailgun rejected");
-            await console.WaitForAsync(HermesApi.Route);
-            AssertNoContentIn(console.Text);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("MAILGUN_API_KEY", null);
-            Environment.SetEnvironmentVariable("MAILGUN_DOMAIN", null);
-        }
+        // Then
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+        Assert.Equal(1, refusal.Calls);
+        await console.WaitForAsync("Mailgun rejected");
+        await console.WaitForAsync(HermesApi.Route);
+        AssertNoContentIn(console.Text);
     }
 
     [FunctionalFact]

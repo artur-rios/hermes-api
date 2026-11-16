@@ -11,20 +11,13 @@ public class ConfigurationTests
     public void GivenAnEnvironmentVariable_WhenTheBuilderIsCreated_ThenConfigurationHasIt()
     {
         // Given
-        Environment.SetEnvironmentVariable(Variable, "owner@example.com");
+        using var environment = new EnvironmentVariables((Variable, "owner@example.com"));
 
-        try
-        {
-            // When
-            var builder = Program.CreateBuilder([]);
+        // When
+        var builder = Program.CreateBuilder([]);
 
-            // Then
-            Assert.Equal("owner@example.com", builder.Configuration[Variable]);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable(Variable, null);
-        }
+        // Then
+        Assert.Equal("owner@example.com", builder.Configuration[Variable]);
     }
 
     [UnitFact]
