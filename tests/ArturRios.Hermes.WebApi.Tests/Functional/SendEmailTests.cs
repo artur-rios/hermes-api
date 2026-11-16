@@ -33,6 +33,9 @@ public class SendEmailTests
     private static async Task<JsonElement> BodyOf(HttpResponseMessage response) =>
         JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)).RootElement;
 
+    private static async Task<IEnumerable<string?>> ErrorsOf(HttpResponseMessage response) =>
+        (await BodyOf(response)).GetProperty("errors").EnumerateArray().Select(error => error.GetString()).ToList();
+
     private static void FailDeliveryWith(HermesApi api, Exception exception) =>
         api.Email.Setup(email => email.SendEmailAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(exception);
@@ -62,6 +65,35 @@ public class SendEmailTests
         // Then
         Assert.True(body.GetProperty("success").GetBoolean());
         Assert.Empty(body.GetProperty("errors").EnumerateArray());
+        Assert.Equal(SendEmailOutcomes.Accepted, Assert.Single(body.GetProperty("messages").EnumerateArray()).GetString());
+    }
+
+    [FunctionalFact]
+    public async Task GivenAValidRequest_WhenSending_ThenTheAnswerHasNoRetryAfter()
+    {
+        // Given
+        using var api = Api();
+
+        // When
+        var response = await api.SendAsync(Valid, Key);
+
+        // Then
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        Assert.Null(response.Headers.RetryAfter);
+    }
+
+    [FunctionalFact]
+    public async Task GivenAGet_WhenRequestingTheRoute_ThenAnswers405AndSendsNothing()
+    {
+        // Given
+        using var api = Api();
+
+        // When
+        var response = await api.GetAsync(HermesApi.Route);
+
+        // Then
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
+        Assert.Empty(api.Sent);
     }
 
     [FunctionalFact]
@@ -94,6 +126,7 @@ public class SendEmailTests
 
         // Then
         Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+        Assert.Equal([SendEmailOutcomes.TooLarge], await ErrorsOf(response));
         Assert.Empty(api.Sent);
     }
 
@@ -117,15 +150,45 @@ public class SendEmailTests
     {
         // Given
         using var api = Api();
-        var streamed = new StreamContent(new MemoryStream(new byte[SendEmailEndpoint.MaximumBodyBytes + 1]));
-        streamed.Headers.ContentLength = null;
+        var streamed = new UnsizedContent(new byte[SendEmailEndpoint.MaximumBodyBytes + 1]);
 
         // When
         var response = await api.PostAsync(streamed, Key);
 
         // Then
         Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+        Assert.Equal([SendEmailOutcomes.TooLarge], await ErrorsOf(response));
         Assert.Empty(api.Sent);
+    }
+
+    [FunctionalFact]
+    public async Task GivenAStreamedBodyExactlyAtTheLimit_WhenSending_ThenItIsNotRefusedForItsSize()
+    {
+        // Given
+        using var api = Api();
+        var streamed = new UnsizedContent(new byte[SendEmailEndpoint.MaximumBodyBytes]);
+
+        // When
+        var response = await api.PostAsync(streamed, Key);
+
+        // Then
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal([SendEmailOutcomes.InvalidBody], await ErrorsOf(response));
+    }
+
+    [FunctionalFact]
+    public async Task GivenAStreamedValidRequest_WhenSending_ThenAnswers202()
+    {
+        // Given
+        using var api = Api();
+        var streamed = new UnsizedContent(JsonSerializer.SerializeToUtf8Bytes(Valid));
+
+        // When
+        var response = await api.PostAsync(streamed, Key);
+
+        // Then
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        Assert.Single(api.Sent);
     }
 
     [FunctionalFact]
@@ -139,7 +202,8 @@ public class SendEmailTests
         var response = await api.PostAsync(atTheLimit, Key);
 
         // Then
-        Assert.NotEqual(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal([SendEmailOutcomes.InvalidBody], await ErrorsOf(response));
     }
 
     [FunctionalFact]
@@ -153,6 +217,7 @@ public class SendEmailTests
 
         // Then
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal([SendEmailOutcomes.Unauthorized], await ErrorsOf(response));
         Assert.Empty(api.Sent);
     }
 
@@ -209,6 +274,7 @@ public class SendEmailTests
 
         // Then
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(["to must be one valid e-mail address."], await ErrorsOf(response));
         Assert.Empty(api.Sent);
     }
 
@@ -223,6 +289,7 @@ public class SendEmailTests
 
         // Then
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal([SendEmailOutcomes.InvalidBody], await ErrorsOf(response));
         Assert.Empty(api.Sent);
     }
 
@@ -293,6 +360,7 @@ public class SendEmailTests
 
         // Then
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal([SendEmailOutcomes.RecipientNotPermitted], await ErrorsOf(response));
         Assert.Empty(api.Sent);
     }
 
@@ -323,6 +391,7 @@ public class SendEmailTests
         // Then
         Assert.Equal(HttpStatusCode.TooManyRequests, response.StatusCode);
         Assert.Equal(TimeSpan.FromSeconds(40), response.Headers.RetryAfter?.Delta);
+        Assert.Equal([SendEmailOutcomes.LimitReached], await ErrorsOf(response));
         Assert.Single(api.Sent);
     }
 
@@ -372,6 +441,7 @@ public class SendEmailTests
 
         // Then
         Assert.DoesNotContain("provider detail", await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        Assert.Equal([SendEmailOutcomes.DeliveryFailed], await ErrorsOf(response));
     }
 
     [FunctionalFact]
@@ -474,5 +544,36 @@ public class SendEmailTests
 
         // Then
         Assert.IsType<MailgunEmailService>(service);
+    }
+
+    [FunctionalFact]
+    public void GivenMailgunIsNotConfigured_WhenResolvingTheService_ThenItOnlyLogs()
+    {
+        // Given
+        using var api = new HermesApi(Settings(), _clock, replaceMailgun: false);
+
+        // When
+        using var scope = api.Services.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+        // Then
+        Assert.IsType<LoggingEmailService>(service);
+    }
+
+    /// <summary>
+    /// A body that does not know its length, so the request carries no Content-Length and the endpoint has to count
+    /// what it reads. A <see cref="StreamContent"/> over a <see cref="MemoryStream"/> works its length out.
+    /// </summary>
+    private sealed class UnsizedContent(byte[] bytes) : HttpContent
+    {
+        protected override Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context) =>
+            stream.WriteAsync(bytes).AsTask();
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+
+            return false;
+        }
     }
 }

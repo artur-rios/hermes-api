@@ -22,6 +22,10 @@ internal sealed class HermesApi : IDisposable
 {
     public const string Route = "/api/emails";
 
+    // The API redirects nowhere, and the redirect handler would buffer every request body, which gives it a
+    // Content-Length: a body sent without one would never reach the endpoint as it is.
+    private static readonly WebApplicationFactoryClientOptions ClientOptions = new() { AllowAutoRedirect = false };
+
     private readonly WebApplicationFactory<Program> _factory;
 
     public HermesApi(
@@ -70,10 +74,13 @@ internal sealed class HermesApi : IDisposable
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
         }
 
-        return _factory.CreateClient().SendAsync(request, TestContext.Current.CancellationToken);
+        return _factory.CreateClient(ClientOptions).SendAsync(request, TestContext.Current.CancellationToken);
     }
 
     public Task<HttpResponseMessage> SendAsync(object body, string? key) => PostAsync(JsonContent.Create(body), key);
+
+    public Task<HttpResponseMessage> GetAsync(string route) =>
+        _factory.CreateClient(ClientOptions).GetAsync(route, TestContext.Current.CancellationToken);
 
     public void Dispose() => _factory.Dispose();
 }
