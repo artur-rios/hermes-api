@@ -11,6 +11,9 @@ public class SendEmailRequestValidatorTests
 
     private static bool IsValid(SendEmailRequest request) => new SendEmailRequestValidator().Validate(request).IsValid;
 
+    private static IEnumerable<string> Errors(SendEmailRequest request) =>
+        new SendEmailRequestValidator().Validate(request).Errors.Select(error => error.ErrorMessage);
+
     [UnitFact]
     public void GivenAValidRequest_WhenValidated_ThenItPasses()
     {
@@ -135,6 +138,71 @@ public class SendEmailRequestValidatorTests
 
         // Then
         Assert.False(valid);
+    }
+
+    [UnitTheory]
+    [InlineData(null, "to is required.")]
+    [InlineData("", "to is required.")]
+    [InlineData("not-an-address", "to must be one valid e-mail address.")]
+    public void GivenAnInvalidRecipient_WhenValidated_ThenOneMessageNamesTheField(string? to, string expected)
+    {
+        // When
+        var errors = Errors(Valid() with { To = to });
+
+        // Then
+        Assert.Equal([expected], errors);
+    }
+
+    [UnitTheory]
+    [InlineData(null, "subject is required.")]
+    [InlineData("Line\nBreak", "subject must be a single line.")]
+    public void GivenAnInvalidSubject_WhenValidated_ThenOneMessageNamesTheField(string? subject, string expected)
+    {
+        // When
+        var errors = Errors(Valid() with { Subject = subject });
+
+        // Then
+        Assert.Equal([expected], errors);
+    }
+
+    [UnitFact]
+    public void GivenASubjectOverTheLimitWithALineBreak_WhenValidated_ThenOnlyTheLengthIsReported()
+    {
+        // When
+        var errors = Errors(Valid() with { Subject = new string('s', 201) + "\n" });
+
+        // Then
+        Assert.Equal(["subject must be at most 200 characters."], errors);
+    }
+
+    [UnitFact]
+    public void GivenABodyOverTheLimit_WhenValidated_ThenOneMessageNamesTheField()
+    {
+        // When
+        var errors = Errors(Valid() with { Body = new string('b', 10_001) });
+
+        // Then
+        Assert.Equal(["body must be at most 10000 characters."], errors);
+    }
+
+    [UnitFact]
+    public void GivenAnInvalidReplyTo_WhenValidated_ThenOneMessageNamesTheField()
+    {
+        // When
+        var errors = Errors(Valid() with { ReplyTo = "not-an-address" });
+
+        // Then
+        Assert.Equal(["replyTo must be one valid e-mail address."], errors);
+    }
+
+    [UnitFact]
+    public void GivenEveryFieldMissing_WhenValidated_ThenEachRequiredFieldIsNamed()
+    {
+        // When
+        var errors = Errors(new SendEmailRequest(null, null, null, null));
+
+        // Then
+        Assert.Equal(["to is required.", "subject is required.", "body is required."], errors);
     }
 
     [UnitFact]

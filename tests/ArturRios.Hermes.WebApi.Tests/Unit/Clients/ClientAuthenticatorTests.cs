@@ -93,6 +93,39 @@ public class ClientAuthenticatorTests
     }
 
     [UnitFact]
+    public void GivenNoClients_WhenAuthenticating_ThenNoClientIsReturned()
+    {
+        // Given
+        var authenticator = new ClientAuthenticator(new ClientDirectory([]));
+
+        // When
+        var client = authenticator.Authenticate($"Bearer {_firstKey}");
+
+        // Then
+        Assert.Null(client);
+    }
+
+    [UnitFact]
+    public void GivenAnUppercaseScheme_WhenAuthenticating_ThenTheKeyIsStillRead()
+    {
+        // When
+        var client = Authenticator().Authenticate($"BEARER {_firstKey}");
+
+        // Then
+        Assert.Equal("first", client?.Id);
+    }
+
+    [UnitFact]
+    public void GivenAnActiveKeyWithACharacterMore_WhenAuthenticating_ThenNoClientIsReturned()
+    {
+        // When
+        var client = Authenticator().Authenticate($"Bearer {_firstKey}x");
+
+        // Then
+        Assert.Null(client);
+    }
+
+    [UnitFact]
     public void GivenAKeyInTheHashesOwnForm_WhenAuthenticating_ThenNoClientIsReturned()
     {
         // When

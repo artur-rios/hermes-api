@@ -41,4 +41,51 @@ public class LoggingSetupTests
         // Then
         Assert.Empty(console.Text);
     }
+
+    [UnitFact]
+    public void GivenTheLogger_WhenAFrameworkWarningIsWritten_ThenItIsLogged()
+    {
+        // Given
+        using var console = new ConsoleCapture();
+        using var logger = CreateLogger();
+
+        // When
+        logger.ForContext(Constants.SourceContextPropertyName, "Microsoft.AspNetCore.Server.Kestrel")
+            .Warning("Connection dropped");
+
+        // Then
+        Assert.Contains("Connection dropped", console.Text);
+    }
+
+    [UnitFact]
+    public void GivenTheLogger_WhenADebugEventIsWritten_ThenItIsNotLogged()
+    {
+        // Given
+        using var console = new ConsoleCapture();
+        using var logger = CreateLogger();
+
+        // When
+        logger.Debug("Detail");
+
+        // Then
+        Assert.Empty(console.Text);
+    }
+
+    [UnitFact]
+    public void GivenTheLogger_WhenAnEventCarriesTheProvidersResponse_ThenTheResponseIsNotWritten()
+    {
+        // Given
+        using var console = new ConsoleCapture();
+        using var logger = CreateLogger();
+
+        // When
+        logger.Warning("Mailgun rejected the message with {StatusCode}: {ResponseContent}", 400, "'to' owner@example.com rejected");
+
+        // Then
+        using var document = JsonDocument.Parse(console.Text.Trim());
+        var properties = document.RootElement.GetProperty("Properties");
+        Assert.Equal(400, properties.GetProperty("StatusCode").GetInt32());
+        Assert.False(properties.TryGetProperty("ResponseContent", out _));
+        Assert.DoesNotContain("owner@example.com", console.Text);
+    }
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using ArturRios.Hermes.WebApi.Clients;
 using ArturRios.Util.Test.Attributes;
 
@@ -80,8 +81,12 @@ public class ClientConfigurationTests
     [InlineData("LIMITPERMINUTE", "0")]
     [InlineData("LIMITPERMINUTE", "-1")]
     [InlineData("LIMITPERMINUTE", "many")]
+    [InlineData("LIMITPERMINUTE", "+5")]
+    [InlineData("LIMITPERMINUTE", "2147483648")]
     [InlineData("LIMITPERDAY", "0")]
     [InlineData("LIMITPERDAY", "1.5")]
+    [InlineData("LIMITPERDAY", "1,000")]
+    [InlineData("LIMITPERDAY", "1e3")]
     public void GivenAnInvalidSetting_WhenLoading_ThenItRefusesAndNamesTheClientAndTheSetting(string setting, string value)
     {
         // Given
@@ -463,5 +468,272 @@ public class ClientConfigurationTests
         // Then
         Assert.Contains("SENDER", message);
         Assert.Contains("LIMITPERDAY", message);
+    }
+
+    [UnitFact]
+    public void GivenSeveralProblems_WhenLoading_ThenEachIsAProblemOfItsOwnOnALineOfItsOwn()
+    {
+        // Given
+        var settings = new ClientSettings().Client(0, "first").Remove(0, "SENDER").Client(1, "second").Remove(1, "LIMITPERDAY");
+
+        // When
+        var refusal = Assert.Throws<InvalidConfigurationException>(() => Load(settings));
+
+        // Then
+        Assert.Equal(["Client 'first': SENDER is required.", "Client 'second': LIMITPERDAY is required."], refusal.Problems);
+        Assert.Equal(string.Join(Environment.NewLine, refusal.Problems), refusal.Message);
+    }
+
+    [UnitFact]
+    public void GivenAClientWithSeveralProblems_WhenLoading_ThenItIsLeftOutAndEveryProblemIsListed()
+    {
+        // Given
+        var settings = new ClientSettings().Client(0, "personal-page")
+            .Set(0, "RECIPIENTPOLICY", "everyone")
+            .Set(0, "LIMITPERMINUTE", "0");
+
+        // When
+        var refusal = Assert.Throws<InvalidConfigurationException>(() => Load(settings));
+
+        // Then
+        Assert.Equal(2, refusal.Problems.Count);
+    }
+
+    [UnitTheory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void GivenABlankId_WhenLoading_ThenItRefusesAndNamesItsPosition(string id)
+    {
+        // Given
+        var settings = new ClientSettings().Client(0, "personal-page").Set(0, "ID", id);
+
+        // When
+        var message = Refusal(settings);
+
+        // Then
+        Assert.Contains("Client '#0': ID is required.", message);
+    }
+
+    [UnitFact]
+    public void GivenAnIdWithSurroundingSpaces_WhenLoading_ThenItIsHeldTrimmed()
+    {
+        // Given
+        var settings = new ClientSettings().Client(0, " personal-page ");
+
+        // When
+        var client = Assert.Single(Load(settings).Clients);
+
+        // Then
+        Assert.Equal("personal-page", client.Id);
+    }
+
+    [UnitFact]
+    public void GivenIdsDifferingOnlyInCase_WhenLoading_ThenItRefuses()
+    {
+        // Given
+        var settings = new ClientSettings().Client(0, "personal-page").Client(1, "Personal-Page");
+
+        // When
+        var message = Refusal(settings);
+
+        // Then
+        Assert.Contains("ID is used by more than one client", message);
+    }
+
+    [UnitFact]
+    public void GivenAKeyHashWithSurroundingSpaces_WhenLoading_ThenItIsHeldTrimmed()
+    {
+        // Given
+        var hash = ClientSettings.KeyHash();
+        var settings = new ClientSettings().Client(0, "personal-page", $"  {hash} ");
+
+        // When
+        var client = Assert.Single(Load(settings).Clients);
+
+        // Then
+        Assert.Equal([hash], client.KeyHashes);
+    }
+
+    [UnitFact]
+    public void GivenOnlyBlankKeyHashes_WhenLoading_ThenItRefusesAsHoldingNoKey()
+    {
+        // Given
+        var settings = new ClientSettings().Client(0, "personal-page", " ").Set(0, "KEYHASHES:1", "");
+
+        // When
+        var message = Refusal(settings);
+
+        // Then
+        Assert.Contains("KEYHASHES must hold one or two keys, and holds 0.", message);
+    }
+
+    [UnitFact]
+    public void GivenTheSameKeyHashTwiceForOneClient_WhenLoading_ThenItRefuses()
+    {
+        // Given
+        var hash = ClientSettings.KeyHash();
+        var settings = new ClientSettings().Client(0, "personal-page", hash).Set(0, "KEYHASHES:1", hash);
+
+        // When
+        var message = Refusal(settings);
+
+        // Then
+        Assert.Contains("KEYHASHES holds a key already used by client 'personal-page'", message);
+        Assert.DoesNotContain(hash, message);
+    }
+
+    [UnitFact]
+    public void GivenTwoClientsSharingAKeyHashInDifferentCases_WhenLoading_ThenItRefuses()
+    {
+        // Given
+        var hash = ClientSettings.KeyHash();
+        var settings = new ClientSettings().Client(0, "first", hash).Client(1, "second", hash.ToUpperInvariant());
+
+        // When
+        var message = Refusal(settings);
+
+        // Then
+        Assert.Contains("Client 'second': KEYHASHES holds a key already used by client 'first'.", message);
+    }
+
+    [UnitFact]
+    public void GivenAFixedPolicyWithRecipientsAmongBlanksAndSpaces_WhenLoading_ThenOnlyTheTrimmedRecipientsArePermitted()
+    {
+        // Given
+        var settings = new ClientSettings().Client(0, "personal-page")
+            .Set(0, "ALLOWEDRECIPIENTS:0", " owner@example.com ")
+            .Set(0, "ALLOWEDRECIPIENTS:1", " ");
+
+        // When
+        var client = Assert.Single(Load(settings).Clients);
+
+        // Then
+        Assert.True(client.Policy.Permits("owner@example.com"));
+        Assert.False(client.Policy.Permits("stranger@example.com"));
+    }
+
+    [UnitFact]
+    public void GivenAnAnyPolicyWithRecipientsListed_WhenLoading_ThenTheListIsIgnored()
+    {
+        // Given
+        var settings = new ClientSettings().Client(0, "heimdall")
+            .Set(0, "RECIPIENTPOLICY", "any")
+            .Set(0, "ALLOWEDRECIPIENTS:0", "not-an-address");
+
+        // When
+        var client = Assert.Single(Load(settings).Clients);
+
+        // Then
+        Assert.True(client.Policy.Permits("anyone@example.org"));
+    }
+
+    [UnitFact]
+    public void GivenProductionWithAnInvalidAlertAddress_WhenLoading_ThenItRefusesAsInvalidNotMissing()
+    {
+        // Given
+        var settings = new ClientSettings().ReadyForProduction().Global("HERMES_ALERT_TO", "not-an-address");
+
+        // When
+        var message = Refusal(settings, isProduction: true);
+
+        // Then
+        Assert.Contains("HERMES_ALERT_TO is not one valid e-mail address.", message);
+        Assert.DoesNotContain("is required in production", message);
+    }
+
+    [UnitFact]
+    public void GivenProductionWithNothingConfigured_WhenLoading_ThenItNamesEveryMissingSetting()
+    {
+        // When
+        var refusal = Assert.Throws<InvalidConfigurationException>(() => Load(new ClientSettings(), isProduction: true));
+
+        // Then
+        Assert.Equal(
+            ["MAILGUN_API_KEY is required in production.", "MAILGUN_DOMAIN is required in production.", "HERMES_ALERT_TO is required in production."],
+            refusal.Problems);
+    }
+
+    [UnitFact]
+    public void GivenOutsideProductionWithNothingConfigured_WhenLoading_ThenNothingIsRequired()
+    {
+        // When
+        var directory = Load(new ClientSettings());
+
+        // Then
+        Assert.Empty(directory.Clients);
+    }
+
+    [UnitFact]
+    public void GivenMailgunAndASenderOffItsDomain_WhenLoading_ThenTheRefusalNamesTheDomain()
+    {
+        // Given
+        var settings = new ClientSettings().Client(0, "personal-page", sender: "client@other.example.com").WithMailgun();
+
+        // When
+        var message = Refusal(settings);
+
+        // Then
+        Assert.Contains("Client 'personal-page': SENDER is not on the Mailgun domain mg.example.com.", message);
+    }
+
+    [UnitFact]
+    public void GivenMailgunAndADefaultSenderOnASubdomain_WhenLoading_ThenItRefuses()
+    {
+        // Given
+        var settings = new ClientSettings().WithMailgun().Global("MAILGUN_FROM", "hermes@sub.mg.example.com");
+
+        // When
+        var message = Refusal(settings);
+
+        // Then
+        Assert.Contains("MAILGUN_FROM is not on the Mailgun domain mg.example.com.", message);
+    }
+
+    [UnitTheory]
+    [InlineData("pt-BR", "1.000")]
+    [InlineData("pt-BR", "1,5")]
+    [InlineData("de-DE", "1.000")]
+    [InlineData("ar-SA", "\u0665")]
+    public void GivenACultureThatReadsNumbersOtherwise_WhenALimitIsWrittenItsWay_ThenItIsStillRefused(string culture, string value)
+    {
+        // Given
+        var previous = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
+        var settings = new ClientSettings().Client(0, "personal-page").Set(0, "LIMITPERDAY", value);
+
+        try
+        {
+            // When
+            var message = Refusal(settings);
+
+            // Then
+            Assert.Contains("LIMITPERDAY must be a whole number greater than zero.", message);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previous;
+        }
+    }
+
+    [UnitFact]
+    public void GivenAPortugueseCulture_WhenALimitIsAPlainNumber_ThenItIsRead()
+    {
+        // Given
+        var previous = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("pt-BR");
+        var settings = new ClientSettings().Client(0, "personal-page").Set(0, "LIMITPERDAY", "1000");
+
+        try
+        {
+            // When
+            var client = Assert.Single(Load(settings).Clients);
+
+            // Then
+            Assert.Equal(1000, client.LimitPerDay);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previous;
+        }
     }
 }
