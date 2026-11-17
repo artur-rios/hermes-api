@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# The `test` check: restore, build, the unit and functional suites, and the coverage floor. yggdrasil.yml runs it in
-# the pinned .NET SDK image from the repository's root, and it runs the same on your machine.
+# The `test` check: restore, the format check, build, the unit and functional suites, and the coverage floor.
+# yggdrasil.yml runs it in the pinned .NET SDK image from the repository's root, and it runs the same on your machine.
 #
 # Both suites run in one test run of the one test project, so its single report is the merged line coverage.
 set -euo pipefail
@@ -17,6 +17,11 @@ export DOTNET_NOLOGO=1 DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_SKIP_FIRST_TIME_EXPE
 rm -rf "$COVERAGE_DIRECTORY"
 
 dotnet restore "$SOLUTION"
+
+# Check formatting. Fails when `dotnet format` (whitespace, code style and analyzers, at the severities .editorconfig
+# sets) would change a file; `dotnet format ArturRios.Hermes.sln` applies the same fixes.
+dotnet format "$SOLUTION" --verify-no-changes --no-restore
+
 dotnet build "$SOLUTION" --configuration Release --no-restore
 dotnet test "$SOLUTION" --configuration Release --no-build \
   --collect "XPlat Code Coverage" --results-directory "$COVERAGE_DIRECTORY"
