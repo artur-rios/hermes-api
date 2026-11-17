@@ -3,8 +3,8 @@ using ArturRios.Hermes.WebApi.Platform;
 using ArturRios.Util.Test.Attributes;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ArturRios.Hermes.WebApi.Tests.Functional;
 
