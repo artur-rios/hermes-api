@@ -14,12 +14,19 @@ The process a use case follows, from branch to merge, is in the
 ## Build and test
 
 ```bash
+dotnet format ArturRios.Hermes.sln --verify-no-changes  # the code matches .editorconfig; drop the flag to fix it
 dotnet build ArturRios.Hermes.sln
 dotnet test
 ```
 
-`ci/test.sh` is the `test` check: restore, build, both suites, and the 90% line coverage floor. `ci/docker.sh` is the
-`docker` check. Both run on your machine as they do in CI.
+`ci/test.sh` is the `test` check: restore, the format check, build, both suites, and the 90% line coverage floor.
+`ci/docker.sh` is the `docker` check. Both run on your machine as they do in CI.
+
+Commits that only reformat are listed in `.git-blame-ignore-revs`. Run this once so `git blame` skips them:
+
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
 
 ## Run locally
 
